@@ -96,16 +96,20 @@
         "source": "com.fstv.player.app-main-6:/mipmap-xxxhdpi/ic_launcher_round.png"
     },
     {
-        "merged": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-debug-4:/mipmap-xhdpi_ic_launcher_round.png.flat",
-        "source": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-main-6:/mipmap-xhdpi/ic_launcher_round.png"
-    },
-    {
         "merged": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-debug-4:/layout_item_category_sidebar.xml.flat",
         "source": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-main-6:/layout/item_category_sidebar.xml"
     },
     {
+        "merged": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-debug-4:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-main-6:/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
         "merged": "com.fstv.player.app-debug-4:/mipmap-xxhdpi_ic_launcher.png.flat",
         "source": "com.fstv.player.app-main-6:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-debug-4:/drawable_fstv_banner.png.flat",
+        "source": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-main-6:/drawable/fstv_banner.png"
     },
     {
         "merged": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-debug-4:/mipmap-xhdpi_ic_launcher.png.flat",
