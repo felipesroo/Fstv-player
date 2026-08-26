@@ -48,7 +48,7 @@ object DeviceUtils {
             key = randomNumber.toString()
             prefs.edit().putString(KEY_DEVICE_KEY, key).apply()
         }
-        return key
+        return key!!
     }
 
     private fun String?.isNull_or_Empty(): Boolean = this == null || this.isEmpty()

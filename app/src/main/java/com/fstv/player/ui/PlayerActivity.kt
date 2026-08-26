@@ -40,7 +40,7 @@ class PlayerActivity : AppCompatActivity() {
         }
 
         initPlayer()
-        loadPlaylist(playlistUrl)
+        loadPlaylist(playlistUrl!!)
     }
 
     private fun String?.isNull_or_Empty(): Boolean = this == null || this.isEmpty()
