@@ -9,44 +9,41 @@ data class SeriesShow(
 
 object SeriesHelper {
 
-    private val seriesSeasonEpisodeRegex = Regex(
-        "(?i)^(.*?)\\s+([ST]\\d{1,2}\\s*E\\d{1,3}.*|S\\d{1,2}\\b.*|T\\d{1,2}\\b.*|E\\d{1,3}\\b.*)",
-        RegexOption.IGNORE_CASE
-    )
-
     /**
-     * Extrai o nome da série limpo sem S01E01 ou número de temporada/episódio.
-     * Exemplo: "Amor Moderno S01 Amor Moderno - S01E01 - Quando o..." -> "Amor Moderno"
-     * Exemplo: "Stranger Things S04E01 - Capitulo Um" -> "Stranger Things"
+     * Extrai o nome da série limpo de forma ultra-rápida sem usar Regex pesado no loop principal.
      */
     fun extractShowTitle(fullName: String): String {
         val trimmed = fullName.trim()
+        if (trimmed.isEmpty()) return "Série"
 
-        val match = seriesSeasonEpisodeRegex.find(trimmed)
-        if (match != null) {
-            val titleCandidate = match.groupValues[1].trim()
-                .trimEnd('-', ':', '|', ' ')
-            if (titleCandidate.isNotEmpty() && titleCandidate.length > 2) {
-                return titleCandidate
+        val len = trimmed.length
+        var cutIndex = -1
+
+        for (i in 0 until len - 2) {
+            val c = trimmed[i]
+            if ((c == 'S' || c == 's' || c == 'T' || c == 't') && trimmed[i + 1].isDigit()) {
+                if (i == 0 || trimmed[i - 1] == ' ' || trimmed[i - 1] == '-' || trimmed[i - 1] == '.' || trimmed[i - 1] == '[') {
+                    cutIndex = i
+                    break
+                }
             }
         }
 
-        // Tentar separar por traço ou S01/T01
-        val splitByS = trimmed.split(Regex("(?i)\\s+[ST]\\d{1,2}"))
-        if (splitByS.size > 1 && splitByS[0].trim().isNotEmpty()) {
-            return splitByS[0].trim().trimEnd('-', ':', '|', ' ')
+        if (cutIndex > 2) {
+            val candidate = trimmed.substring(0, cutIndex).trim().trimEnd('-', ':', '|', ' ', '.')
+            if (candidate.isNotEmpty()) return candidate
         }
 
-        val splitByDash = trimmed.split(" - ")
-        if (splitByDash.size > 1) {
-            return splitByDash[0].trim()
+        val dashIdx = trimmed.indexOf(" - ")
+        if (dashIdx > 2) {
+            return trimmed.substring(0, dashIdx).trim()
         }
 
         return trimmed
     }
 
     /**
-     * Agrupa uma lista de episódios avulsos por Séries (Show).
+     * Agrupa episódios por Série.
      */
     fun groupEpisodesByShow(items: List<ChannelItem>): List<SeriesShow> {
         val map = LinkedHashMap<String, MutableList<ChannelItem>>()
@@ -55,12 +52,14 @@ object SeriesHelper {
 
         for (item in items) {
             val showTitle = extractShowTitle(item.name)
-            if (!map.containsKey(showTitle)) {
-                map[showTitle] = mutableListOf()
+            var list = map[showTitle]
+            if (list == null) {
+                list = mutableListOf()
+                map[showTitle] = list
                 logoMap[showTitle] = item.logoUrl
                 catMap[showTitle] = item.category
             }
-            map[showTitle]!!.add(item)
+            list.add(item)
         }
 
         return map.map { (title, episodes) ->

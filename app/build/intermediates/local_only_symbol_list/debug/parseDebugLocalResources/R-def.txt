@@ -52,6 +52,7 @@ id tvStatusMessage
 id tvSubtitle
 layout activity_activation
 layout activity_player
+layout activity_splash
 layout item_category_sidebar
 layout item_channel
 mipmap ic_launcher

@@ -4,12 +4,12 @@
         "source": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-main-6:/layout/activity_activation.xml"
     },
     {
-        "merged": "com.fstv.player.app-mergeDebugResources-3:/layout/item_category_sidebar.xml",
-        "source": "com.fstv.player.app-main-6:/layout/item_category_sidebar.xml"
+        "merged": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-mergeDebugResources-3:/layout/item_category_sidebar.xml",
+        "source": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-main-6:/layout/item_category_sidebar.xml"
     },
     {
-        "merged": "com.fstv.player.app-mergeDebugResources-3:/layout/activity_player.xml",
-        "source": "com.fstv.player.app-main-6:/layout/activity_player.xml"
+        "merged": "com.fstv.player.app-mergeDebugResources-3:/layout/activity_splash.xml",
+        "source": "com.fstv.player.app-main-6:/layout/activity_splash.xml"
     },
     {
         "merged": "/home/felipe/.gradle/daemon/8.5/com.fstv.player.app-mergeDebugResources-3:/layout/activity_player.xml",

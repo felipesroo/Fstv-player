@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:2:1-51:12
-INJECTED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:2:1-51:12
-INJECTED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:2:1-51:12
-INJECTED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:2:1-51:12
+ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:2:1-58:12
+INJECTED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:2:1-58:12
+INJECTED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:2:1-58:12
+INJECTED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:2:1-58:12
 MERGED from [androidx.databinding:viewbinding:8.3.2] /home/felipe/.gradle/caches/transforms-3/a78a72c3ed9a96137379e7103ae464c3/transformed/viewbinding-8.3.2/AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.android.material:material:1.11.0] /home/felipe/.gradle/caches/transforms-3/85e26164fe20a3e9938174baf1e094b9/transformed/material-1.11.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /home/felipe/.gradle/caches/transforms-3/e457d3789099b363b4e3717adc6d89f6/transformed/constraintlayout-2.1.4/AndroidManifest.xml:2:1-11:12
@@ -104,8 +104,8 @@ ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/And
 	android:name
 		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:15:9-52
 application
-ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:18:5-49:19
-INJECTED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:18:5-49:19
+ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:18:5-56:19
+INJECTED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:18:5-56:19
 MERGED from [com.google.android.material:material:1.11.0] /home/felipe/.gradle/caches/transforms-3/85e26164fe20a3e9938174baf1e094b9/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.11.0] /home/felipe/.gradle/caches/transforms-3/85e26164fe20a3e9938174baf1e094b9/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /home/felipe/.gradle/caches/transforms-3/e457d3789099b363b4e3717adc6d89f6/transformed/constraintlayout-2.1.4/AndroidManifest.xml:9:5-20
@@ -142,7 +142,7 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /home/felipe/.gradle/caches
 		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:24:9-48
 	android:usesCleartextTraffic
 		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:25:9-44
-activity#com.fstv.player.ui.ActivationActivity
+activity#com.fstv.player.ui.SplashActivity
 ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:29:9-39:20
 	android:screenOrientation
 		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:32:13-50
@@ -151,7 +151,7 @@ ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/And
 	android:theme
 		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:33:13-52
 	android:name
-		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:30:13-50
+		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:30:13-46
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER+category:name:android.intent.category.LEANBACK_LAUNCHER
 ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:34:13-38:29
 action#android.intent.action.MAIN
@@ -178,6 +178,16 @@ ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/And
 		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:47:13-63
 	android:name
 		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:43:13-46
+activity#com.fstv.player.ui.ActivationActivity
+ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:50:9-54:55
+	android:screenOrientation
+		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:53:13-50
+	android:exported
+		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:52:13-37
+	android:theme
+		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:54:13-52
+	android:name
+		ADDED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml:51:13-50
 uses-sdk
 INJECTED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/felipe/.gemini/antigravity/scratch/Fstv-Player/app/src/main/AndroidManifest.xml

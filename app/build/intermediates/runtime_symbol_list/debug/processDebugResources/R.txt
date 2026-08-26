@@ -4735,6 +4735,7 @@ int layout abc_select_dialog_material 0x7f0e001a
 int layout abc_tooltip 0x7f0e001b
 int layout activity_activation 0x7f0e001c
 int layout activity_player 0x7f0e001d
+int layout activity_splash 0x7f0e00be
 int layout custom_dialog 0x7f0e001e
 int layout design_bottom_navigation_item 0x7f0e001f
 int layout design_bottom_sheet_dialog 0x7f0e0020

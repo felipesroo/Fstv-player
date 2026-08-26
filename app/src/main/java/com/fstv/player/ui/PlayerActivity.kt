@@ -25,6 +25,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 
 enum class SectionType { LIVE_TV, MOVIES, SERIES }
 
@@ -33,10 +36,14 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPlayerBinding
     private var exoPlayer: ExoPlayer? = null
 
-    // Listas filtradas por tipo de conteúdo
+    // Listas de conteúdo
     private var liveTvList: List<ChannelItem> = emptyList()
     private var moviesList: List<ChannelItem> = emptyList()
     private var seriesList: List<ChannelItem> = emptyList()
+
+    // Séries Pré-Agrupadas em Background (zero lag ao clicar)
+    private var preGroupedSeriesShows: List<SeriesShow> = emptyList()
+    private var preGroupedSeriesChannels: List<ChannelItem> = emptyList()
 
     // Estado da tela atual
     private var currentSection: SectionType = SectionType.LIVE_TV
@@ -44,9 +51,7 @@ class PlayerActivity : AppCompatActivity() {
     private var currentCategoryChannels: List<ChannelItem> = emptyList()
     private var currentSelectedCategoryName: String = "Todos"
 
-    // Modo de exibição de Séries (Se estamos vendo lista de séries ou episódios de uma série)
     private var isViewingSeriesEpisodes = false
-    private var selectedShow: SeriesShow? = null
 
     private lateinit var categoryAdapter: CategoryAdapter
     private lateinit var channelAdapter: ChannelAdapter
@@ -68,13 +73,13 @@ class PlayerActivity : AppCompatActivity() {
         setupDashboardCards()
         setupSearch()
 
-        if (playlistUrl.isNullOrEmpty()) {
-            Toast.makeText(this, "Nenhuma URL de playlist fornecida", Toast.LENGTH_LONG).show()
-            finish()
-            return
+        val finalUrl = if (playlistUrl.isNullOrEmpty()) {
+            "http://br22.lol/get.php?username=kppF9j&password=AbBf4V&type=m3u_plus&output=ts"
+        } else {
+            playlistUrl
         }
 
-        loadPlaylist(playlistUrl)
+        startFastPlaylistLoad(finalUrl)
     }
 
     private fun initPlayer() {
@@ -84,24 +89,20 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerViews() {
-        // 1. Adapter da Sidebar Vertical de Categorias (Barra Lateral Esquerda)
         categoryAdapter = CategoryAdapter(emptyList()) { categoryInfo ->
             selectCategory(categoryInfo.name)
         }
         binding.rvCategories.layoutManager = LinearLayoutManager(this)
         binding.rvCategories.adapter = categoryAdapter
 
-        // 2. Adapter da Lista de Canais/Filmes/Séries
         channelAdapter = ChannelAdapter(emptyList()) { channel, _ ->
             onItemClicked(channel)
         }
         binding.rvChannels.layoutManager = LinearLayoutManager(this)
         binding.rvChannels.adapter = channelAdapter
 
-        // 3. Botão Voltar ao Menu
         binding.btnBackToDashboard.setOnClickListener {
             if (isViewingSeriesEpisodes) {
-                // Voltar da lista de episódios para a lista de séries da categoria
                 selectCategory(currentSelectedCategoryName)
             } else {
                 showDashboard()
@@ -134,77 +135,128 @@ class PlayerActivity : AppCompatActivity() {
         })
     }
 
-    private fun loadPlaylist(url: String) {
-        binding.layoutLoading.visibility = View.VISIBLE
-        binding.layoutDashboard.visibility = View.GONE
-        binding.layoutContent.visibility = View.GONE
+    /**
+     * Carregamento Rápido com Cache Local + Atualização em Segundo Plano
+     */
+    private fun startFastPlaylistLoad(url: String) {
+        val cacheFile = File(cacheDir, "cached_playlist.m3u")
 
         lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val client = OkHttpClient.Builder()
-                    .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                    .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
-                    .followRedirects(true)
-                    .followSslRedirects(true)
-                    .build()
-                val request = Request.Builder()
-                    .url(url)
-                    .header("User-Agent", "IPTVSmartersPro/1.0.0")
-                    .build()
-                val response = client.newCall(request).execute()
+            // 1. Se existir cache local, carregar instantaneamente (< 0.5s)
+            if (cacheFile.exists() && cacheFile.length() > 0) {
+                withContext(Dispatchers.Main) {
+                    binding.tvLoadingStatus.text = "Iniciando lista em cache..."
+                }
+                try {
+                    val channels = M3uParser.parseStream(FileInputStream(cacheFile))
+                    if (channels.isNotEmpty()) {
+                        processAndDisplayChannels(channels, isFromCache = true)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    binding.layoutLoading.visibility = View.VISIBLE
+                    binding.tvLoadingStatus.text = "Baixando lista M3U pela primeira vez..."
+                }
+            }
 
-                if (response.isSuccessful) {
-                    val inputStream = response.body?.byteStream()
-                    val allChannels = if (inputStream != null) M3uParser.parseStream(inputStream) else emptyList()
+            // 2. Baixar a versão mais recente da internet em segundo plano
+            downloadAndCachePlaylist(url, cacheFile)
+        }
+    }
 
-                    val liveTv = mutableListOf<ChannelItem>()
-                    val movies = mutableListOf<ChannelItem>()
-                    val series = mutableListOf<ChannelItem>()
+    private suspend fun downloadAndCachePlaylist(url: String, cacheFile: File) {
+        try {
+            val client = OkHttpClient.Builder()
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+                .followRedirects(true)
+                .followSslRedirects(true)
+                .build()
 
-                    val seriesRegex = Regex("(?i).*[ST]\\d{1,2}\\s*E\\d{1,3}.*")
+            val request = Request.Builder()
+                .url(url)
+                .header("User-Agent", "IPTVSmartersPro/1.0.0")
+                .build()
 
-                    for (item in allChannels) {
-                        val cat = item.category.uppercase()
-                        val name = item.name.uppercase()
-                        val urlLower = item.streamUrl.lowercase()
+            val response = client.newCall(request).execute()
 
-                        when {
-                            // 1. Regra de SÉRIES (Prioridade 1): Categoria com SÉR/SÉRIE/SÉRIES/TEMPORADA/ANIME ou formato S01E01
-                            cat.contains("SÉR") || cat.contains("SERIE") || cat.contains("SÉRIE") || cat.contains("TEMPORADA") || cat.contains("ANIME") || urlLower.contains("/series/") || seriesRegex.matches(item.name) -> {
-                                series.add(item)
-                            }
-                            // 2. Regra de FILMES (Prioridade 2): Categoria com FILME/FILMES/MOVIE/VOD/CINEMA
-                            cat.contains("FILM") || cat.contains("MOVIE") || cat.contains("VOD") || cat.contains("CINEMA") || urlLower.contains("/movie/") -> {
-                                movies.add(item)
-                            }
-                            // 3. Regra de CANAIS AO VIVO (Padrão)
-                            else -> {
-                                liveTv.add(item)
-                            }
+            if (response.isSuccessful) {
+                val inputStream = response.body?.byteStream()
+                if (inputStream != null) {
+                    val tempFile = File(cacheDir, "temp_playlist.m3u")
+                    val outputStream = FileOutputStream(tempFile)
+                    inputStream.copyTo(outputStream)
+                    outputStream.close()
+                    inputStream.close()
+
+                    if (tempFile.exists() && tempFile.length() > 0) {
+                        tempFile.copyTo(cacheFile, overwrite = true)
+                        tempFile.delete()
+
+                        val updatedChannels = M3uParser.parseStream(FileInputStream(cacheFile))
+                        if (updatedChannels.isNotEmpty()) {
+                            processAndDisplayChannels(updatedChannels, isFromCache = false)
                         }
                     }
-
-                    liveTvList = liveTv
-                    moviesList = movies
-                    seriesList = series
-
-                    withContext(Dispatchers.Main) {
-                        binding.layoutLoading.visibility = View.GONE
-                        binding.tvLiveTvCount.text = "${liveTvList.size} canais"
-                        binding.tvMoviesCount.text = "${moviesList.size} filmes"
-                        binding.tvSeriesCount.text = "${seriesList.size} episódios de séries"
-
-                        showDashboard()
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        binding.tvLoadingStatus.text = "Erro ao baixar lista (${response.code})."
-                    }
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    binding.tvLoadingStatus.text = "Erro de rede: ${e.message}"
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private suspend fun processAndDisplayChannels(allChannels: List<ChannelItem>, isFromCache: Boolean) {
+        val liveTv = mutableListOf<ChannelItem>()
+        val movies = mutableListOf<ChannelItem>()
+        val series = mutableListOf<ChannelItem>()
+
+        val seriesRegex = Regex("(?i).*[ST]\\d{1,2}\\s*E\\d{1,3}.*")
+
+        for (item in allChannels) {
+            val cat = item.category.uppercase()
+            val urlLower = item.streamUrl.lowercase()
+
+            when {
+                cat.contains("SÉR") || cat.contains("SERIE") || cat.contains("SÉRIE") || cat.contains("TEMPORADA") || cat.contains("ANIME") || urlLower.contains("/series/") || seriesRegex.matches(item.name) -> {
+                    series.add(item)
                 }
+                cat.contains("FILM") || cat.contains("MOVIE") || cat.contains("VOD") || cat.contains("CINEMA") || urlLower.contains("/movie/") -> {
+                    movies.add(item)
+                }
+                else -> {
+                    liveTv.add(item)
+                }
+            }
+        }
+
+        // Pré-agrupar Séries em Background Thread (zero travamento na UI!)
+        val groupedShows = SeriesHelper.groupEpisodesByShow(series)
+        val groupedChannels = groupedShows.map { show ->
+            ChannelItem(
+                name = "🎭 ${show.title} (${show.episodes.size} episódios)",
+                streamUrl = "SERIES_GROUP:${show.title}",
+                logoUrl = show.logoUrl,
+                category = show.category
+            )
+        }
+
+        liveTvList = liveTv
+        moviesList = movies
+        seriesList = series
+        preGroupedSeriesShows = groupedShows
+        preGroupedSeriesChannels = groupedChannels
+
+        withContext(Dispatchers.Main) {
+            binding.layoutLoading.visibility = View.GONE
+            binding.tvLiveTvCount.text = "${liveTvList.size} canais"
+            binding.tvMoviesCount.text = "${moviesList.size} filmes"
+            binding.tvSeriesCount.text = "${groupedShows.size} séries (${seriesList.size} ep.)"
+
+            if (binding.layoutDashboard.visibility != View.VISIBLE && binding.layoutContent.visibility != View.VISIBLE) {
+                showDashboard()
             }
         }
     }
@@ -212,7 +264,6 @@ class PlayerActivity : AppCompatActivity() {
     private fun showDashboard() {
         exoPlayer?.pause()
         isViewingSeriesEpisodes = false
-        selectedShow = null
 
         binding.layoutLoading.visibility = View.GONE
         binding.layoutContent.visibility = View.GONE
@@ -221,88 +272,95 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun openSection(section: SectionType) {
-        currentSection = section
-        isViewingSeriesEpisodes = false
-        selectedShow = null
+        try {
+            currentSection = section
+            isViewingSeriesEpisodes = false
 
-        binding.layoutDashboard.visibility = View.GONE
-        binding.layoutContent.visibility = View.VISIBLE
+            binding.layoutDashboard.visibility = View.GONE
+            binding.layoutContent.visibility = View.VISIBLE
 
-        when (section) {
-            SectionType.LIVE_TV -> {
-                binding.tvSectionTitle.text = "📡 Canais ao Vivo (${liveTvList.size})"
-                currentSectionChannels = liveTvList
+            when (section) {
+                SectionType.LIVE_TV -> {
+                    binding.tvSectionTitle.text = "📡 Canais ao Vivo (${liveTvList.size})"
+                    currentSectionChannels = liveTvList
+                }
+                SectionType.MOVIES -> {
+                    binding.tvSectionTitle.text = "🎬 Filmes (${moviesList.size})"
+                    currentSectionChannels = moviesList
+                }
+                SectionType.SERIES -> {
+                    binding.tvSectionTitle.text = "🎭 Séries (${preGroupedSeriesShows.size} séries)"
+                    currentSectionChannels = seriesList
+                }
             }
-            SectionType.MOVIES -> {
-                binding.tvSectionTitle.text = "🎬 Filmes (${moviesList.size})"
-                currentSectionChannels = moviesList
+
+            // Construir lista de categorias da barra lateral esquerda
+            val categoryMap = mutableMapOf<String, Int>()
+            if (section == SectionType.SERIES) {
+                for (show in preGroupedSeriesShows) {
+                    val catName = if (show.category.isEmpty()) "Geral" else show.category
+                    categoryMap[catName] = (categoryMap[catName] ?: 0) + 1
+                }
+            } else {
+                for (item in currentSectionChannels) {
+                    val catName = if (item.category.isEmpty()) "Geral" else item.category
+                    categoryMap[catName] = (categoryMap[catName] ?: 0) + 1
+                }
             }
-            SectionType.SERIES -> {
-                binding.tvSectionTitle.text = "🎭 Séries (${seriesList.size})"
-                currentSectionChannels = seriesList
+
+            val categoryListInfo = mutableListOf<CategoryItemInfo>()
+            val totalCount = if (section == SectionType.SERIES) preGroupedSeriesShows.size else currentSectionChannels.size
+            categoryListInfo.add(CategoryItemInfo("Todos", totalCount, "📺"))
+
+            for ((catName, count) in categoryMap.entries.sortedBy { it.key }) {
+                val icon = getCategoryIcon(catName)
+                categoryListInfo.add(CategoryItemInfo(catName, count, icon))
             }
+
+            categoryAdapter.updateList(categoryListInfo)
+            binding.rvCategories.requestFocus()
+
+            selectCategory("Todos")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Erro ao abrir seção: ${e.message}", Toast.LENGTH_SHORT).show()
         }
-
-        // Construir lista de categorias da sidebar vertical
-        val categoryMap = mutableMapOf<String, Int>()
-        for (item in currentSectionChannels) {
-            val catName = if (item.category.isEmpty()) "Geral" else item.category
-            categoryMap[catName] = (categoryMap[catName] ?: 0) + 1
-        }
-
-        val categoryListInfo = mutableListOf<CategoryItemInfo>()
-        categoryListInfo.add(CategoryItemInfo("Todos", currentSectionChannels.size, "📺"))
-
-        for ((catName, count) in categoryMap.entries.sortedBy { it.key }) {
-            val icon = getCategoryIcon(catName)
-            categoryListInfo.add(CategoryItemInfo(catName, count, icon))
-        }
-
-        categoryAdapter.updateList(categoryListInfo)
-        binding.rvCategories.requestFocus()
-
-        selectCategory("Todos")
     }
 
     private fun selectCategory(categoryName: String) {
-        currentSelectedCategoryName = categoryName
-        isViewingSeriesEpisodes = false
-        selectedShow = null
+        try {
+            currentSelectedCategoryName = categoryName
+            isViewingSeriesEpisodes = false
 
-        binding.tvCategoryHeader.text = "ITENS DA CATEGORIA: ${categoryName.uppercase()}"
-        binding.etSearch.text?.clear()
+            binding.tvCategoryHeader.text = "ITENS DA CATEGORIA: ${categoryName.uppercase()}"
+            binding.etSearch.text?.clear()
 
-        val rawCategoryChannels = if (categoryName == "Todos") {
-            currentSectionChannels
-        } else {
-            currentSectionChannels.filter { it.category.equals(categoryName, ignoreCase = true) }
-        }
-
-        if (currentSection == SectionType.SERIES) {
-            // Se estiver na seção de Séries, agrupar episódios por título da Série!
-            val shows = SeriesHelper.groupEpisodesByShow(rawCategoryChannels)
-            // Transformar cada Série em um ChannelItem para exibição limpa
-            currentCategoryChannels = shows.map { show ->
-                ChannelItem(
-                    name = "🎭 ${show.title} (${show.episodes.size} episódios)",
-                    streamUrl = "SERIES_GROUP:${show.title}",
-                    logoUrl = show.logoUrl,
-                    category = show.category
-                )
+            if (currentSection == SectionType.SERIES) {
+                currentCategoryChannels = if (categoryName == "Todos") {
+                    preGroupedSeriesChannels
+                } else {
+                    preGroupedSeriesChannels.filter { it.category.equals(categoryName, ignoreCase = true) }
+                }
+            } else {
+                currentCategoryChannels = if (categoryName == "Todos") {
+                    currentSectionChannels
+                } else {
+                    currentSectionChannels.filter { it.category.equals(categoryName, ignoreCase = true) }
+                }
             }
-        } else {
-            currentCategoryChannels = rawCategoryChannels
-        }
 
-        channelAdapter.updateList(currentCategoryChannels)
-        binding.rvChannels.scrollToPosition(0)
+            channelAdapter.updateList(currentCategoryChannels)
+            binding.rvChannels.scrollToPosition(0)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun onItemClicked(item: ChannelItem) {
         try {
             if (item.streamUrl.startsWith("SERIES_GROUP:")) {
                 val showTitle = item.streamUrl.removePrefix("SERIES_GROUP:")
-                val episodes = currentSectionChannels.filter {
+                val episodes = seriesList.filter {
                     SeriesHelper.extractShowTitle(it.name).equals(showTitle, ignoreCase = true)
                 }
 

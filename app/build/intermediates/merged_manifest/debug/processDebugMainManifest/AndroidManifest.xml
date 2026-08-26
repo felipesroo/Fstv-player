@@ -40,9 +40,9 @@
         android:theme="@style/Theme.FstvPlayer"
         android:usesCleartextTraffic="true" >
 
-        <!-- Tela de Ativação (MAC & Key) -->
+        <!-- Splash Activity (Checa ativação inteligente) -->
         <activity
-            android:name="com.fstv.player.ui.ActivationActivity"
+            android:name="com.fstv.player.ui.SplashActivity"
             android:exported="true"
             android:screenOrientation="landscape"
             android:theme="@style/Theme.FstvPlayer" >
@@ -54,13 +54,20 @@
             </intent-filter>
         </activity>
 
-        <!-- Tela do Player de Canais -->
+        <!-- Tela Principal do Player (Menu de Canais, Filmes, Séries) -->
         <activity
             android:name="com.fstv.player.ui.PlayerActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false"
             android:screenOrientation="landscape"
             android:theme="@style/Theme.FstvPlayer.Fullscreen" />
+
+        <!-- Tela de Ativação (Exibida APENAS na 1ª vez se não ativado) -->
+        <activity
+            android:name="com.fstv.player.ui.ActivationActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.FstvPlayer" />
 
         <provider
             android:name="androidx.startup.InitializationProvider"
