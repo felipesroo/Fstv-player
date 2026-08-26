@@ -220,13 +220,18 @@ class PlayerActivity : AppCompatActivity() {
                 val client = OkHttpClient.Builder()
                     .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
                     .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+                    .followRedirects(true)
+                    .followSslRedirects(true)
                     .build()
-                val request = Request.Builder().url(url).build()
+                val request = Request.Builder()
+                    .url(url)
+                    .header("User-Agent", "IPTVSmartersPro/1.0.0")
+                    .build()
                 val response = client.newCall(request).execute()
 
                 if (response.isSuccessful) {
-                    val m3uBody = response.body?.string() ?: ""
-                    allChannels = M3uParser.parse(m3uBody)
+                    val inputStream = response.body?.byteStream()
+                    allChannels = if (inputStream != null) M3uParser.parseStream(inputStream) else emptyList()
                     filteredChannels = allChannels
 
                     // Extrair categorias únicas
