@@ -7,8 +7,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    // Altere para a URL base do seu servidor/painel web (Hostinger, Coolify, etc.)
-    private var BASE_URL = "http://10.0.2.2:8080/" 
+    // URL do seu painel online no Coolify
+    private var BASE_URL = "http://iptv.2.25.152.195.sslip.io/" 
 
     fun setBaseUrl(url: String) {
         if (!url.endsWith("/")) {
