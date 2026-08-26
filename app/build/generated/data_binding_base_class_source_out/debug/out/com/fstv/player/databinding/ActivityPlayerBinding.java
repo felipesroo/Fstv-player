@@ -4,12 +4,14 @@ package com.fstv.player.databinding;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media3.ui.PlayerView;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
 import androidx.viewbinding.ViewBindings;
 import com.fstv.player.R;
@@ -19,7 +21,19 @@ import java.lang.String;
 
 public final class ActivityPlayerBinding implements ViewBinding {
   @NonNull
-  private final RelativeLayout rootView;
+  private final LinearLayout rootView;
+
+  @NonNull
+  public final TextView btnToggleSidebar;
+
+  @NonNull
+  public final LinearLayout channelInfoOverlay;
+
+  @NonNull
+  public final EditText etSearch;
+
+  @NonNull
+  public final LinearLayout loadingOverlay;
 
   @NonNull
   public final PlayerView playerView;
@@ -28,24 +42,52 @@ public final class ActivityPlayerBinding implements ViewBinding {
   public final ProgressBar progressBarPlayer;
 
   @NonNull
+  public final RecyclerView rvChannels;
+
+  @NonNull
+  public final LinearLayout sidebar;
+
+  @NonNull
+  public final LinearLayout tabsContainer;
+
+  @NonNull
+  public final TextView tvCurrentCategory;
+
+  @NonNull
+  public final TextView tvCurrentChannelName;
+
+  @NonNull
   public final TextView tvCustomerWelcome;
 
   @NonNull
   public final TextView tvLoadingStatus;
 
-  private ActivityPlayerBinding(@NonNull RelativeLayout rootView, @NonNull PlayerView playerView,
-      @NonNull ProgressBar progressBarPlayer, @NonNull TextView tvCustomerWelcome,
-      @NonNull TextView tvLoadingStatus) {
+  private ActivityPlayerBinding(@NonNull LinearLayout rootView, @NonNull TextView btnToggleSidebar,
+      @NonNull LinearLayout channelInfoOverlay, @NonNull EditText etSearch,
+      @NonNull LinearLayout loadingOverlay, @NonNull PlayerView playerView,
+      @NonNull ProgressBar progressBarPlayer, @NonNull RecyclerView rvChannels,
+      @NonNull LinearLayout sidebar, @NonNull LinearLayout tabsContainer,
+      @NonNull TextView tvCurrentCategory, @NonNull TextView tvCurrentChannelName,
+      @NonNull TextView tvCustomerWelcome, @NonNull TextView tvLoadingStatus) {
     this.rootView = rootView;
+    this.btnToggleSidebar = btnToggleSidebar;
+    this.channelInfoOverlay = channelInfoOverlay;
+    this.etSearch = etSearch;
+    this.loadingOverlay = loadingOverlay;
     this.playerView = playerView;
     this.progressBarPlayer = progressBarPlayer;
+    this.rvChannels = rvChannels;
+    this.sidebar = sidebar;
+    this.tabsContainer = tabsContainer;
+    this.tvCurrentCategory = tvCurrentCategory;
+    this.tvCurrentChannelName = tvCurrentChannelName;
     this.tvCustomerWelcome = tvCustomerWelcome;
     this.tvLoadingStatus = tvLoadingStatus;
   }
 
   @Override
   @NonNull
-  public RelativeLayout getRoot() {
+  public LinearLayout getRoot() {
     return rootView;
   }
 
@@ -70,6 +112,30 @@ public final class ActivityPlayerBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
+      id = R.id.btnToggleSidebar;
+      TextView btnToggleSidebar = ViewBindings.findChildViewById(rootView, id);
+      if (btnToggleSidebar == null) {
+        break missingId;
+      }
+
+      id = R.id.channelInfoOverlay;
+      LinearLayout channelInfoOverlay = ViewBindings.findChildViewById(rootView, id);
+      if (channelInfoOverlay == null) {
+        break missingId;
+      }
+
+      id = R.id.etSearch;
+      EditText etSearch = ViewBindings.findChildViewById(rootView, id);
+      if (etSearch == null) {
+        break missingId;
+      }
+
+      id = R.id.loadingOverlay;
+      LinearLayout loadingOverlay = ViewBindings.findChildViewById(rootView, id);
+      if (loadingOverlay == null) {
+        break missingId;
+      }
+
       id = R.id.playerView;
       PlayerView playerView = ViewBindings.findChildViewById(rootView, id);
       if (playerView == null) {
@@ -79,6 +145,36 @@ public final class ActivityPlayerBinding implements ViewBinding {
       id = R.id.progressBarPlayer;
       ProgressBar progressBarPlayer = ViewBindings.findChildViewById(rootView, id);
       if (progressBarPlayer == null) {
+        break missingId;
+      }
+
+      id = R.id.rvChannels;
+      RecyclerView rvChannels = ViewBindings.findChildViewById(rootView, id);
+      if (rvChannels == null) {
+        break missingId;
+      }
+
+      id = R.id.sidebar;
+      LinearLayout sidebar = ViewBindings.findChildViewById(rootView, id);
+      if (sidebar == null) {
+        break missingId;
+      }
+
+      id = R.id.tabsContainer;
+      LinearLayout tabsContainer = ViewBindings.findChildViewById(rootView, id);
+      if (tabsContainer == null) {
+        break missingId;
+      }
+
+      id = R.id.tvCurrentCategory;
+      TextView tvCurrentCategory = ViewBindings.findChildViewById(rootView, id);
+      if (tvCurrentCategory == null) {
+        break missingId;
+      }
+
+      id = R.id.tvCurrentChannelName;
+      TextView tvCurrentChannelName = ViewBindings.findChildViewById(rootView, id);
+      if (tvCurrentChannelName == null) {
         break missingId;
       }
 
@@ -94,8 +190,10 @@ public final class ActivityPlayerBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ActivityPlayerBinding((RelativeLayout) rootView, playerView, progressBarPlayer,
-          tvCustomerWelcome, tvLoadingStatus);
+      return new ActivityPlayerBinding((LinearLayout) rootView, btnToggleSidebar,
+          channelInfoOverlay, etSearch, loadingOverlay, playerView, progressBarPlayer, rvChannels,
+          sidebar, tabsContainer, tvCurrentCategory, tvCurrentChannelName, tvCustomerWelcome,
+          tvLoadingStatus);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));
