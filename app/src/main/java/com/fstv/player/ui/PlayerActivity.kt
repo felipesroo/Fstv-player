@@ -60,6 +60,7 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var channelAdapter: ChannelAdapter
 
     private val channelInfoHandler = Handler(Looper.getMainLooper())
+    private var activePlaylistUrl: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,13 +77,17 @@ class PlayerActivity : AppCompatActivity() {
         setupDashboardCards()
         setupSearch()
 
-        val finalUrl = if (playlistUrl.isNullOrEmpty()) {
+        activePlaylistUrl = if (playlistUrl.isNullOrEmpty()) {
             "http://br22.lol/get.php?username=kppF9j&password=AbBf4V&type=m3u_plus&output=ts"
         } else {
             playlistUrl
         }
 
-        startFastPlaylistLoad(finalUrl)
+        binding.btnRetryLoading.setOnClickListener {
+            startFastPlaylistLoad(activePlaylistUrl)
+        }
+
+        startFastPlaylistLoad(activePlaylistUrl)
     }
 
     private fun initPlayer() {
@@ -94,11 +99,9 @@ class PlayerActivity : AppCompatActivity() {
     private fun setupRecyclerViews() {
         categoryAdapter = CategoryAdapter(emptyList()) { categoryInfo ->
             if (selectedShow != null) {
-                // Seleção de Temporada dentro de uma Série
                 val tempNum = categoryInfo.name.removePrefix("Temporada ").toIntOrNull() ?: 1
                 selectSeason(tempNum)
             } else {
-                // Seleção de Categoria normal
                 selectCategory(categoryInfo.name)
             }
         }
@@ -111,12 +114,10 @@ class PlayerActivity : AppCompatActivity() {
         binding.rvChannels.layoutManager = LinearLayoutManager(this)
         binding.rvChannels.adapter = channelAdapter
 
-        // Botão 🏠 INÍCIO (Volta direto ao Dashboard)
         binding.btnHome.setOnClickListener {
             showDashboard()
         }
 
-        // Botão ← Voltar (Volta 1 nível)
         binding.btnBackToDashboard.setOnClickListener {
             handleBackStep()
         }
@@ -147,38 +148,64 @@ class PlayerActivity : AppCompatActivity() {
         })
     }
 
+    /**
+     * Carregamento Ultra-Rápido com Cache Local + Fallback Seguro
+     */
     private fun startFastPlaylistLoad(url: String) {
         val cacheFile = File(cacheDir, "cached_playlist.m3u")
 
         lifecycleScope.launch(Dispatchers.IO) {
-            if (cacheFile.exists() && cacheFile.length() > 0) {
+            var loadedFromCache = false
+
+            // 1. Tentar ler do cache local se for válido (> 10KB)
+            if (cacheFile.exists() && cacheFile.length() > 10240) {
                 withContext(Dispatchers.Main) {
                     binding.tvLoadingStatus.text = "Iniciando lista em cache..."
                 }
                 try {
-                    val channels = M3uParser.parseStream(FileInputStream(cacheFile))
+                    val stream = FileInputStream(cacheFile)
+                    val channels = M3uParser.parseStream(stream)
+                    stream.close()
                     if (channels.isNotEmpty()) {
-                        processAndDisplayChannels(channels, isFromCache = true)
+                        loadedFromCache = true
+                        processAndDisplayChannels(channels)
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-            } else {
+            }
+
+            // 2. Se não carregou do cache, exibir UI de download
+            if (!loadedFromCache) {
                 withContext(Dispatchers.Main) {
                     binding.layoutLoading.visibility = View.VISIBLE
-                    binding.tvLoadingStatus.text = "Baixando lista M3U pela primeira vez..."
+                    binding.progressBarPlayer.visibility = View.VISIBLE
+                    binding.btnRetryLoading.visibility = View.GONE
+                    binding.tvLoadingStatus.text = "Baixando lista de canais..."
+                    binding.tvLoadingSub.text = "Aguarde enquanto a lista é baixada do servidor."
                 }
             }
 
-            downloadAndCachePlaylist(url, cacheFile)
+            // 3. Baixar versão atualizada do servidor
+            val downloadOk = downloadAndCachePlaylist(url, cacheFile)
+
+            if (!loadedFromCache && !downloadOk) {
+                withContext(Dispatchers.Main) {
+                    binding.progressBarPlayer.visibility = View.GONE
+                    binding.tvLoadingStatus.text = "❌ Não foi possível baixar a lista"
+                    binding.tvLoadingSub.text = "Verifique sua conexão ou se a lista expirou no painel."
+                    binding.btnRetryLoading.visibility = View.VISIBLE
+                    binding.btnRetryLoading.requestFocus()
+                }
+            }
         }
     }
 
-    private suspend fun downloadAndCachePlaylist(url: String, cacheFile: File) {
-        try {
+    private suspend fun downloadAndCachePlaylist(url: String, cacheFile: File): Boolean {
+        return try {
             val client = OkHttpClient.Builder()
-                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+                .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(180, java.util.concurrent.TimeUnit.SECONDS)
                 .followRedirects(true)
                 .followSslRedirects(true)
                 .build()
@@ -191,31 +218,36 @@ class PlayerActivity : AppCompatActivity() {
             val response = client.newCall(request).execute()
 
             if (response.isSuccessful) {
-                val inputStream = response.body?.byteStream()
-                if (inputStream != null) {
+                val body = response.body
+                if (body != null) {
                     val tempFile = File(cacheDir, "temp_playlist.m3u")
                     val outputStream = FileOutputStream(tempFile)
-                    inputStream.copyTo(outputStream)
+                    body.byteStream().copyTo(outputStream)
                     outputStream.close()
-                    inputStream.close()
 
-                    if (tempFile.exists() && tempFile.length() > 0) {
+                    if (tempFile.exists() && tempFile.length() > 1024) {
                         tempFile.copyTo(cacheFile, overwrite = true)
                         tempFile.delete()
 
-                        val updatedChannels = M3uParser.parseStream(FileInputStream(cacheFile))
+                        val stream = FileInputStream(cacheFile)
+                        val updatedChannels = M3uParser.parseStream(stream)
+                        stream.close()
+
                         if (updatedChannels.isNotEmpty()) {
-                            processAndDisplayChannels(updatedChannels, isFromCache = false)
+                            processAndDisplayChannels(updatedChannels)
+                            return true
                         }
                     }
                 }
             }
+            false
         } catch (e: Exception) {
             e.printStackTrace()
+            false
         }
     }
 
-    private suspend fun processAndDisplayChannels(allChannels: List<ChannelItem>, isFromCache: Boolean) {
+    private suspend fun processAndDisplayChannels(allChannels: List<ChannelItem>) {
         val liveTv = mutableListOf<ChannelItem>()
         val movies = mutableListOf<ChannelItem>()
         val series = mutableListOf<ChannelItem>()
@@ -239,7 +271,6 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
 
-        // Pré-agrupar Séries por Título e Temporadas em background
         val groupedShows = SeriesHelper.groupEpisodesByShowAndSeason(series)
         val groupedChannels = groupedShows.map { show ->
             val totalSeasons = show.seasonsMap.size
@@ -373,7 +404,6 @@ class PlayerActivity : AppCompatActivity() {
         binding.tvSidebarHeader.text = "TEMPORADAS DE: ${show.title.uppercase()}"
         binding.tvCategoryHeader.text = "EPISÓDIOS DA SÉRIE"
 
-        // Preencher a Sidebar de Categorias com as Temporadas da Série!
         val seasonCategoryInfo = mutableListOf<CategoryItemInfo>()
         for ((seasonNum, episodes) in show.seasonsMap) {
             seasonCategoryInfo.add(
@@ -388,7 +418,6 @@ class PlayerActivity : AppCompatActivity() {
         categoryAdapter.updateList(seasonCategoryInfo)
         binding.rvCategories.requestFocus()
 
-        // Selecionar Temporada 1 (ou primeira disponível) por padrão
         val firstSeasonNum = show.seasonsMap.keys.firstOrNull() ?: 1
         selectSeason(firstSeasonNum)
     }
@@ -432,12 +461,9 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun handleBackStep() {
         if (selectedShow != null) {
-            // Se estiver vendo uma Série/Temporada -> Voltar para Lista de Séries da Categoria
             selectCategory(currentSelectedCategoryName)
-            // Atualizar lista de categorias da barra lateral
             openSection(SectionType.SERIES)
         } else if (binding.layoutContent.visibility == View.VISIBLE) {
-            // Se estiver na Lista de Conteúdo -> Voltar para o Dashboard Inicial
             showDashboard()
         }
     }
