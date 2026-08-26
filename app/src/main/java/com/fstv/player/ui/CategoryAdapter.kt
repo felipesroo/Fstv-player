@@ -30,19 +30,19 @@ class CategoryAdapter(
             view.isFocusableInTouchMode = false
 
             view.setOnClickListener {
-                val pos = adapterPosition
-                if (pos != RecyclerView.NO_ID.toInt()) {
+                val pos = bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION && pos >= 0 && pos < categories.size) {
                     val old = selectedPosition
                     selectedPosition = pos
-                    notifyItemChanged(old)
+                    if (old >= 0 && old < categories.size) notifyItemChanged(old)
                     notifyItemChanged(pos)
                     onCategoryClick(categories[pos])
                 }
             }
 
             view.setOnFocusChangeListener { v, hasFocus ->
-                val pos = adapterPosition
-                if (pos == RecyclerView.NO_ID.toInt()) return@setOnFocusChangeListener
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION || pos < 0 || pos >= categories.size) return@setOnFocusChangeListener
                 if (hasFocus) {
                     v.scaleX = 1.03f
                     v.scaleY = 1.03f
@@ -62,6 +62,7 @@ class CategoryAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        if (position < 0 || position >= categories.size) return
         val cat = categories[position]
         holder.tvIcon.text = cat.icon
         holder.tvName.text = cat.name
@@ -70,7 +71,6 @@ class CategoryAdapter(
         val isSelected = position == selectedPosition
         holder.view.isSelected = isSelected
 
-        // Texto SEMPRE branco para máxima visibilidade sobre qualquer fundo
         holder.tvName.setTextColor(0xFFFFFFFF.toInt())
         holder.tvIcon.setTextColor(0xFFFFFFFF.toInt())
         holder.tvCount.setTextColor(if (isSelected) 0xFF818CF8.toInt() else 0xAAFFFFFF.toInt())

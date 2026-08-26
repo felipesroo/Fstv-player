@@ -296,28 +296,27 @@ class PlayerActivity : AppCompatActivity() {
 
         channelAdapter.updateList(currentCategoryChannels)
         binding.rvChannels.scrollToPosition(0)
-
-        if (currentCategoryChannels.isNotEmpty() && currentSection == SectionType.LIVE_TV) {
-            playChannel(currentCategoryChannels[0])
-        }
     }
 
     private fun onItemClicked(item: ChannelItem) {
-        if (item.streamUrl.startsWith("SERIES_GROUP:")) {
-            // O usuário clicou em uma Série -> Exibir os episódios dessa série!
-            val showTitle = item.streamUrl.removePrefix("SERIES_GROUP:")
-            val episodes = currentSectionChannels.filter {
-                SeriesHelper.extractShowTitle(it.name).equals(showTitle, ignoreCase = true)
+        try {
+            if (item.streamUrl.startsWith("SERIES_GROUP:")) {
+                val showTitle = item.streamUrl.removePrefix("SERIES_GROUP:")
+                val episodes = currentSectionChannels.filter {
+                    SeriesHelper.extractShowTitle(it.name).equals(showTitle, ignoreCase = true)
+                }
+
+                isViewingSeriesEpisodes = true
+                binding.tvCategoryHeader.text = "EPISÓDIOS: ${showTitle.uppercase()}"
+
+                channelAdapter.updateList(episodes)
+                binding.rvChannels.scrollToPosition(0)
+                Toast.makeText(this, "📺 ${episodes.size} episódios de $showTitle", Toast.LENGTH_SHORT).show()
+            } else {
+                playChannel(item)
             }
-
-            isViewingSeriesEpisodes = true
-            binding.tvCategoryHeader.text = "EPISÓDIOS: ${showTitle.uppercase()}"
-
-            channelAdapter.updateList(episodes)
-            binding.rvChannels.scrollToPosition(0)
-            Toast.makeText(this, "📺 ${episodes.size} episódios de $showTitle", Toast.LENGTH_SHORT).show()
-        } else {
-            playChannel(item)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -345,20 +344,29 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun playChannel(channel: ChannelItem) {
-        exoPlayer?.let { player ->
-            val mediaItem = MediaItem.fromUri(Uri.parse(channel.streamUrl))
-            player.setMediaItem(mediaItem)
-            player.prepare()
-            player.playWhenReady = true
-        }
+        val url = channel.streamUrl
+        if (url.isEmpty() || url.startsWith("SERIES_GROUP:")) return
 
-        binding.tvCurrentChannelName.text = channel.name
-        binding.tvCurrentCategory.text = channel.category
-        binding.channelInfoOverlay.visibility = View.VISIBLE
-        channelInfoHandler.removeCallbacksAndMessages(null)
-        channelInfoHandler.postDelayed({
-            binding.channelInfoOverlay.visibility = View.GONE
-        }, 4000)
+        try {
+            exoPlayer?.let { player ->
+                val uri = Uri.parse(url.trim())
+                val mediaItem = MediaItem.fromUri(uri)
+                player.setMediaItem(mediaItem)
+                player.prepare()
+                player.playWhenReady = true
+            }
+
+            binding.tvCurrentChannelName.text = channel.name
+            binding.tvCurrentCategory.text = channel.category
+            binding.channelInfoOverlay.visibility = View.VISIBLE
+            channelInfoHandler.removeCallbacksAndMessages(null)
+            channelInfoHandler.postDelayed({
+                binding.channelInfoOverlay.visibility = View.GONE
+            }, 4000)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Erro ao tentar reproduzir o canal", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

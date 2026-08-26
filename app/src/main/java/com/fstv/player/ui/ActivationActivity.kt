@@ -95,10 +95,17 @@ class ActivationActivity : AppCompatActivity() {
                                 pollJob?.cancel()
                                 binding.tvStatusMessage.text = "✅ Dispositivo Ativado! Carregando canais..."
                                 binding.progressBar.visibility = View.VISIBLE
-                                
+
+                                val prefs = getSharedPreferences("FstvPlayerPrefs", MODE_PRIVATE)
+                                prefs.edit()
+                                    .putBoolean("IS_ACTIVATED", true)
+                                    .putString("SAVED_PLAYLIST_URL", playlistUrl)
+                                    .putString("CUSTOMER_NAME", body.customerName ?: "Cliente")
+                                    .apply()
+
                                 val intent = Intent(this@ActivationActivity, PlayerActivity::class.java).apply {
                                     putExtra("PLAYLIST_URL", playlistUrl)
-                                    putExtra("CUSTOMER_NAME", body.customerName)
+                                    putExtra("CUSTOMER_NAME", body.customerName ?: "Cliente")
                                 }
                                 startActivity(intent)
                                 finish()
