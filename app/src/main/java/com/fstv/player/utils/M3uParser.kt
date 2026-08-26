@@ -14,8 +14,9 @@ data class ChannelItem(
 object M3uParser {
 
     fun parseStream(inputStream: InputStream): List<ChannelItem> {
-        val channels = mutableListOf<ChannelItem>()
-        val reader = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8))
+        val channels = ArrayList<ChannelItem>(20000)
+        // Usar buffer expandido de 64KB para leitura máxima de velocidade
+        val reader = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8), 65536)
 
         var currentTitle = ""
         var currentLogo: String? = null
@@ -23,53 +24,53 @@ object M3uParser {
 
         var line: String? = reader.readLine()
         while (line != null) {
-            val trimmed = line.trim()
+            val len = line.length
+            if (len == 0) {
+                line = reader.readLine()
+                continue
+            }
 
-            if (trimmed.startsWith("#EXTINF:", ignoreCase = true)) {
-                // Extrair nome do canal (após a última vírgula)
-                currentTitle = if (trimmed.contains(",")) {
-                    trimmed.substringAfterLast(",").trim()
+            if (line.startsWith("#EXTINF:", ignoreCase = true)) {
+                val lastComma = line.lastIndexOf(',')
+                currentTitle = if (lastComma != -1 && lastComma < len - 1) {
+                    line.substring(lastComma + 1).trim()
                 } else {
                     "Canal sem Nome"
                 }
 
-                // Extrair Categoria / grupo
-                currentGroup = when {
-                    trimmed.contains("group-title=\"") -> {
-                        trimmed.substringAfter("group-title=\"").substringBefore("\"").trim()
-                    }
-                    trimmed.contains("group-title='") -> {
-                        trimmed.substringAfter("group-title='").substringBefore("'").trim()
-                    }
-                    else -> "Geral"
+                val gtIdx = line.indexOf("group-title=\"")
+                currentGroup = if (gtIdx != -1) {
+                    val start = gtIdx + 13
+                    val end = line.indexOf('"', start)
+                    if (end != -1) line.substring(start, end).trim() else "Geral"
+                } else {
+                    "Geral"
                 }
-
                 if (currentGroup.isEmpty()) currentGroup = "Geral"
 
-                // Extrair Logo / Ícone
-                currentLogo = when {
-                    trimmed.contains("tvg-logo=\"") -> {
-                        trimmed.substringAfter("tvg-logo=\"").substringBefore("\"").trim()
-                    }
-                    trimmed.contains("tvg-logo='") -> {
-                        trimmed.substringAfter("tvg-logo='").substringBefore("'").trim()
-                    }
-                    else -> null
-                }
-            } else if (trimmed.isNotEmpty() && !trimmed.startsWith("#")) {
-                // É a URL do canal/filme/série
-                val nameToUse = if (currentTitle.isNotEmpty()) currentTitle else "Canal ${channels.size + 1}"
-                channels.add(
-                    ChannelItem(
-                        name = nameToUse,
-                        streamUrl = trimmed,
-                        logoUrl = currentLogo,
-                        category = currentGroup
+                val logoIdx = line.indexOf("tvg-logo=\"")
+                currentLogo = if (logoIdx != -1) {
+                    val start = logoIdx + 10
+                    val end = line.indexOf('"', start)
+                    if (end != -1) line.substring(start, end).trim() else null
+                } else null
+
+            } else if (line[0] != '#') {
+                val trimmedUrl = line.trim()
+                if (trimmedUrl.isNotEmpty()) {
+                    val nameToUse = if (currentTitle.isNotEmpty()) currentTitle else "Canal ${channels.size + 1}"
+                    channels.add(
+                        ChannelItem(
+                            name = nameToUse,
+                            streamUrl = trimmedUrl,
+                            logoUrl = currentLogo,
+                            category = currentGroup
+                        )
                     )
-                )
-                currentTitle = ""
-                currentLogo = null
-                currentGroup = "Geral"
+                    currentTitle = ""
+                    currentLogo = null
+                    currentGroup = "Geral"
+                }
             }
             line = reader.readLine()
         }

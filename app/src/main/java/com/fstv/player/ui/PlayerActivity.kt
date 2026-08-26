@@ -22,11 +22,13 @@ import com.fstv.player.utils.SeriesShowWithSeasons
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
 
 enum class SectionType { LIVE_TV, MOVIES, SERIES }
 
@@ -60,6 +62,16 @@ class PlayerActivity : AppCompatActivity() {
 
     private val channelInfoHandler = Handler(Looper.getMainLooper())
     private var activePlaylistUrl: String = ""
+
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .connectionPool(ConnectionPool(5, 5, TimeUnit.MINUTES))
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .build()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,11 +110,9 @@ class PlayerActivity : AppCompatActivity() {
     private fun setupRecyclerViews() {
         categoryAdapter = CategoryAdapter(emptyList()) { categoryInfo ->
             if (selectedShow != null) {
-                // Selecionar Temporada dentro da Série
                 val tempNum = categoryInfo.name.removePrefix("Temporada ").toIntOrNull() ?: 1
                 selectSeason(tempNum)
             } else {
-                // Selecionar Categoria normal
                 selectCategory(categoryInfo.name)
             }
         }
@@ -155,9 +165,10 @@ class PlayerActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             var loadedFromCache = false
 
+            // 1. Tentar ler do Cache Local primeiro
             if (cacheFile.exists() && cacheFile.length() > 10240) {
                 withContext(Dispatchers.Main) {
-                    binding.tvLoadingStatus.text = "Iniciando lista em cache..."
+                    binding.tvLoadingStatus.text = "Iniciando aplicativo..."
                 }
                 try {
                     val stream = FileInputStream(cacheFile)
@@ -172,22 +183,24 @@ class PlayerActivity : AppCompatActivity() {
                 }
             }
 
+            // 2. Se não tinha cache, mostrar tela de progresso rápido
             if (!loadedFromCache) {
                 withContext(Dispatchers.Main) {
                     binding.layoutLoading.visibility = View.VISIBLE
                     binding.progressBarPlayer.visibility = View.VISIBLE
                     binding.btnRetryLoading.visibility = View.GONE
                     binding.tvLoadingStatus.text = "Baixando lista de canais..."
-                    binding.tvLoadingSub.text = "Aguarde enquanto a lista é obtida do servidor."
+                    binding.tvLoadingSub.text = "Otimizando download em alta velocidade..."
                 }
             }
 
+            // 3. Baixar versão com compressão GZIP ativada
             val downloadOk = downloadAndCachePlaylist(url, cacheFile)
 
             if (!loadedFromCache && !downloadOk) {
                 withContext(Dispatchers.Main) {
                     binding.progressBarPlayer.visibility = View.GONE
-                    binding.tvLoadingStatus.text = "❌ Não foi possível baixar a lista"
+                    binding.tvLoadingStatus.text = "❌ Não foi possível carregar a lista"
                     binding.tvLoadingSub.text = "Verifique sua conexão ou tente novamente."
                     binding.btnRetryLoading.visibility = View.VISIBLE
                     binding.btnRetryLoading.requestFocus()
@@ -198,19 +211,13 @@ class PlayerActivity : AppCompatActivity() {
 
     private suspend fun downloadAndCachePlaylist(url: String, cacheFile: File): Boolean {
         return try {
-            val client = OkHttpClient.Builder()
-                .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-                .readTimeout(180, java.util.concurrent.TimeUnit.SECONDS)
-                .followRedirects(true)
-                .followSslRedirects(true)
-                .build()
-
             val request = Request.Builder()
                 .url(url)
                 .header("User-Agent", "IPTVSmartersPro/1.0.0")
+                .header("Accept-Encoding", "gzip, deflate")
                 .build()
 
-            val response = client.newCall(request).execute()
+            val response = okHttpClient.newCall(request).execute()
 
             if (response.isSuccessful) {
                 val body = response.body
@@ -243,9 +250,9 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private suspend fun processAndDisplayChannels(allChannels: List<ChannelItem>) {
-        val liveTv = mutableListOf<ChannelItem>()
-        val movies = mutableListOf<ChannelItem>()
-        val series = mutableListOf<ChannelItem>()
+        val liveTv = ArrayList<ChannelItem>(10000)
+        val movies = ArrayList<ChannelItem>(10000)
+        val series = ArrayList<ChannelItem>(10000)
 
         val seriesRegex = Regex("(?i).*[ST]\\d{1,2}\\s*E\\d{1,3}.*")
 
