@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "com.fstv.player.app-mergeDebugResources-3:/layout/activity_player.xml",
+        "source": "com.fstv.player.app-main-6:/layout/activity_player.xml"
+    },
+    {
+        "merged": "com.fstv.player.app-mergeDebugResources-3:/layout/activity_activation.xml",
+        "source": "com.fstv.player.app-main-6:/layout/activity_activation.xml"
+    }
+]

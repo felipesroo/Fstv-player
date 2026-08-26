@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark"
+    android:padding="32dp">
+
+    <!-- Header / Logo Title -->
+    <TextView
+        android:id="@+id/tvAppTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📺 Fstv-Player"
+        android:textColor="@color/accent_blue"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:id="@+id/tvSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ativação do Dispositivo Android TV"
+        android:textColor="@color/text_muted"
+        android:textSize="18sp"
+        android:layout_below="@id/tvAppTitle"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="4dp" />
+
+    <!-- Container dos Dados de Ativação (MAC & Key) -->
+    <LinearLayout
+        android:id="@+id/containerCredentials"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="24dp">
+
+        <!-- Card MAC Address -->
+        <LinearLayout
+            android:layout_width="320dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/card_bg"
+            android:padding="24dp"
+            android:layout_marginEnd="16dp"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MAC ADDRESS"
+                android:textColor="@color/text_muted"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvMacAddress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:00:00:00:00:00"
+                android:textColor="@color/text_white"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
+        <!-- Card Device Key -->
+        <LinearLayout
+            android:layout_width="320dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/card_bg"
+            android:padding="24dp"
+            android:layout_marginStart="16dp"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CÓDIGO (DEVICE KEY)"
+                android:textColor="@color/text_muted"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvDeviceKey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="123456"
+                android:textColor="@color/accent_gold"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Instruções e Status -->
+    <TextView
+        android:id="@+id/tvInstructions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Informe seu MAC Address e Código acima no Painel Web para liberar seu acesso."
+        android:textColor="@color/text_white"
+        android:textSize="16sp"
+        android:layout_below="@id/containerCredentials"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="24dp" />
+
+    <TextView
+        android:id="@+id/tvStatusMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Aguardando ativação..."
+        android:textColor="@color/accent_blue"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_below="@id/tvInstructions"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="12dp" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_below="@id/tvStatusMessage"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="12dp"
+        android:visibility="gone" />
+
+    <!-- Botão de Checagem Manual (Focável no controle da TV) -->
+    <Button
+        android:id="@+id/btnCheckActivation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="VERIFICAR ATIVAÇÃO AGORA"
+        android:textColor="@color/text_white"
+        android:backgroundTint="@color/btn_bg"
+        android:focusable="true"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp" />
+
+</RelativeLayout>
