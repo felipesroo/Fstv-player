@@ -100,7 +100,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        channelAdapter = ChannelAdapter(emptyList()) { channel ->
+        channelAdapter = ChannelAdapter(emptyList()) { channel, _ ->
             playChannel(channel)
             // Fechar sidebar ao selecionar canal
             sidebarVisible = false
@@ -161,20 +161,35 @@ class PlayerActivity : AppCompatActivity() {
         val orderedCats = mainCats + outros
 
         for (cat in orderedCats) {
+            val isActive = cat == currentCategory
             val tab = TextView(this).apply {
                 text = categoryLabel(cat)
-                textSize = 13f
-                setPadding(20, 12, 20, 12)
+                textSize = 12f
+                setPadding(24, 10, 24, 10)
                 isFocusable = true
                 isClickable = true
-                setTextColor(if (cat == currentCategory) 0xFF6366F1.toInt() else 0xCCFFFFFF.toInt())
-                setBackgroundColor(if (cat == currentCategory) 0x1A6366F1 else 0x00000000)
+                isSelected = isActive
+                setTextColor(if (isActive) 0xFFFFFFFF.toInt() else 0xAAFFFFFF.toInt())
+                background = resources.getDrawable(R.drawable.tab_selector, theme)
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                ).also { it.setMargins(4, 4, 4, 4) }
+
+                // Animação ao focar (D-pad)
+                setOnFocusChangeListener { v, hasFocus ->
+                    v.scaleX = if (hasFocus) 1.08f else 1.0f
+                    v.scaleY = if (hasFocus) 1.08f else 1.0f
+                    v.elevation = if (hasFocus) 10f else 0f
+                }
 
                 setOnClickListener {
                     currentCategory = cat
                     binding.etSearch.text?.clear()
                     filterChannels("")
                     buildCategoryTabs()
+                    // Scroll para o topo após trocar categoria
+                    binding.rvChannels.scrollToPosition(0)
                 }
             }
             binding.tabsContainer.addView(tab)

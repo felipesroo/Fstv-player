@@ -12,28 +12,49 @@ import com.fstv.player.utils.ChannelItem
 
 class ChannelAdapter(
     private var channels: List<ChannelItem>,
-    private val onChannelClick: (ChannelItem) -> Unit
+    private val onChannelClick: (ChannelItem, Int) -> Unit
 ) : RecyclerView.Adapter<ChannelAdapter.ViewHolder>() {
 
-    private var selectedPosition = 0
+    var selectedPosition = -1
 
-    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
         val tvName: TextView = view.findViewById(R.id.tvName)
         val ivLogo: ImageView = view.findViewById(R.id.ivLogo)
 
         init {
+            view.isFocusable = true
+            view.isFocusableInTouchMode = false
+
             view.setOnClickListener {
                 val pos = adapterPosition
                 if (pos != RecyclerView.NO_ID.toInt()) {
                     val old = selectedPosition
                     selectedPosition = pos
                     notifyItemChanged(old)
-                    notifyItemChanged(selectedPosition)
-                    onChannelClick(channels[pos])
+                    notifyItemChanged(pos)
+                    onChannelClick(channels[pos], pos)
                 }
             }
-            view.isFocusable = true
-            view.isFocusableInTouchMode = true
+
+            // Mudar visual ao receber/perder foco (D-pad TV)
+            view.setOnFocusChangeListener { v, hasFocus ->
+                val pos = adapterPosition
+                if (pos == RecyclerView.NO_ID.toInt()) return@setOnFocusChangeListener
+                if (hasFocus) {
+                    v.scaleX = 1.04f
+                    v.scaleY = 1.04f
+                    v.elevation = 8f
+                    (v.findViewById<TextView>(R.id.tvName))?.setTextColor(0xFFFFFFFF.toInt())
+                } else {
+                    v.scaleX = 1.0f
+                    v.scaleY = 1.0f
+                    v.elevation = 0f
+                    val isSelected = pos == selectedPosition
+                    (v.findViewById<TextView>(R.id.tvName))?.setTextColor(
+                        if (isSelected) 0xFF6366F1.toInt() else 0xCCFFFFFF.toInt()
+                    )
+                }
+            }
         }
     }
 
@@ -47,11 +68,9 @@ class ChannelAdapter(
         holder.tvName.text = channel.name
 
         val isSelected = position == selectedPosition
-        holder.itemView.setBackgroundColor(
-            if (isSelected) 0x336366F1 else 0x00000000
-        )
+        holder.view.isSelected = isSelected
         holder.tvName.setTextColor(
-            if (isSelected) 0xFF6366F1.toInt() else 0xFFFFFFFF.toInt()
+            if (isSelected) 0xFF6366F1.toInt() else 0xCCFFFFFF.toInt()
         )
 
         if (!channel.logoUrl.isNullOrEmpty()) {
@@ -68,14 +87,7 @@ class ChannelAdapter(
 
     fun updateList(newList: List<ChannelItem>) {
         channels = newList
-        selectedPosition = 0
+        selectedPosition = -1
         notifyDataSetChanged()
-    }
-
-    fun setSelected(position: Int) {
-        val old = selectedPosition
-        selectedPosition = position
-        notifyItemChanged(old)
-        notifyItemChanged(selectedPosition)
     }
 }

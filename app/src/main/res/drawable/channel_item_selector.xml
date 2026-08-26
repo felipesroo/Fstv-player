@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Focado (controle remoto) -->
+    <item android:state_focused="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="#286366F1" />
+                    <corners android:radius="8dp" />
+                </shape>
+            </item>
+            <item android:left="0dp" android:top="0dp" android:right="0dp" android:bottom="0dp">
+                <shape android:shape="rectangle">
+                    <stroke android:width="2dp" android:color="#FF6366F1" />
+                    <corners android:radius="8dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    <!-- Selecionado -->
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#3A6366F1" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <!-- Pressionado -->
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#506366F1" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <!-- Normal -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+</selector>
