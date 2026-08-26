@@ -3935,6 +3935,7 @@ id browse_headers_dock
 id browse_headers_root
 id browse_title_group
 id btnCheckActivation
+id btnToggleSidebar
 id button
 id buttonPanel
 id button_start
@@ -3951,6 +3952,7 @@ id center_vertical
 id chain
 id chain2
 id chains
+id channelInfoOverlay
 id checkbox
 id checked
 id chronometer
@@ -4048,6 +4050,7 @@ id end_padder
 id enterAlways
 id enterAlwaysCollapsed
 id error_frame
+id etSearch
 id exitUntilCollapsed
 id exo_ad_overlay
 id exo_artwork
@@ -4187,6 +4190,7 @@ id inward
 id is_pooling_container_tag
 id italic
 id item_touch_helper_previous_elevation
+id ivLogo
 id jumpToEnd
 id jumpToStart
 id label
@@ -4232,6 +4236,7 @@ id line3
 id linear
 id listMode
 id list_item
+id loadingOverlay
 id logo
 id m3_side_sheet
 id main
@@ -4395,6 +4400,7 @@ id row_content
 id row_header
 id row_header_description
 id row_index_key
+id rvChannels
 id save_non_transition_alpha
 id save_overlay_view
 id sawtooth
@@ -4429,6 +4435,7 @@ id shortcut
 id showCustom
 id showHome
 id showTitle
+id sidebar
 id sin
 id skipCollapsed
 id skipped
@@ -4465,6 +4472,7 @@ id submit_area
 id supportScrollUp
 id surface_view
 id tabMode
+id tabsContainer
 id tag_accessibility_actions
 id tag_accessibility_clickable_spans
 id tag_accessibility_heading
@@ -4519,11 +4527,14 @@ id transition_transform
 id transport_row
 id triangle
 id tvAppTitle
+id tvCurrentCategory
+id tvCurrentChannelName
 id tvCustomerWelcome
 id tvDeviceKey
 id tvInstructions
 id tvLoadingStatus
 id tvMacAddress
+id tvName
 id tvStatusMessage
 id tvSubtitle
 id unchecked
@@ -4735,6 +4746,7 @@ layout exo_styled_sub_settings_list_item
 layout exo_track_selection_dialog
 layout ime_base_split_test_activity
 layout ime_secondary_split_test_activity
+layout item_channel
 layout lb_action_1_line
 layout lb_action_2_lines
 layout lb_background_window

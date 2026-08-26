@@ -201,7 +201,10 @@ class PlayerActivity : AppCompatActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val client = OkHttpClient()
+                val client = OkHttpClient.Builder()
+                    .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+                    .build()
                 val request = Request.Builder().url(url).build()
                 val response = client.newCall(request).execute()
 
