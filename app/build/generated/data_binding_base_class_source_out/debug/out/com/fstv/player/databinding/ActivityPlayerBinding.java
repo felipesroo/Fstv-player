@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -21,10 +22,19 @@ import java.lang.String;
 
 public final class ActivityPlayerBinding implements ViewBinding {
   @NonNull
-  private final LinearLayout rootView;
+  private final FrameLayout rootView;
 
   @NonNull
-  public final TextView btnToggleSidebar;
+  public final TextView btnBackToDashboard;
+
+  @NonNull
+  public final LinearLayout cardLiveTv;
+
+  @NonNull
+  public final LinearLayout cardMovies;
+
+  @NonNull
+  public final LinearLayout cardSeries;
 
   @NonNull
   public final LinearLayout channelInfoOverlay;
@@ -33,7 +43,13 @@ public final class ActivityPlayerBinding implements ViewBinding {
   public final EditText etSearch;
 
   @NonNull
-  public final LinearLayout loadingOverlay;
+  public final LinearLayout layoutContent;
+
+  @NonNull
+  public final LinearLayout layoutDashboard;
+
+  @NonNull
+  public final LinearLayout layoutLoading;
 
   @NonNull
   public final PlayerView playerView;
@@ -42,13 +58,19 @@ public final class ActivityPlayerBinding implements ViewBinding {
   public final ProgressBar progressBarPlayer;
 
   @NonNull
+  public final RecyclerView rvCategories;
+
+  @NonNull
   public final RecyclerView rvChannels;
 
   @NonNull
-  public final LinearLayout sidebar;
+  public final LinearLayout sidebarCategories;
 
   @NonNull
-  public final LinearLayout tabsContainer;
+  public final LinearLayout sidebarChannels;
+
+  @NonNull
+  public final TextView tvCategoryHeader;
 
   @NonNull
   public final TextView tvCurrentCategory;
@@ -57,37 +79,70 @@ public final class ActivityPlayerBinding implements ViewBinding {
   public final TextView tvCurrentChannelName;
 
   @NonNull
-  public final TextView tvCustomerWelcome;
+  public final TextView tvCustomerName;
+
+  @NonNull
+  public final TextView tvLiveTvCount;
 
   @NonNull
   public final TextView tvLoadingStatus;
 
-  private ActivityPlayerBinding(@NonNull LinearLayout rootView, @NonNull TextView btnToggleSidebar,
-      @NonNull LinearLayout channelInfoOverlay, @NonNull EditText etSearch,
-      @NonNull LinearLayout loadingOverlay, @NonNull PlayerView playerView,
-      @NonNull ProgressBar progressBarPlayer, @NonNull RecyclerView rvChannels,
-      @NonNull LinearLayout sidebar, @NonNull LinearLayout tabsContainer,
-      @NonNull TextView tvCurrentCategory, @NonNull TextView tvCurrentChannelName,
-      @NonNull TextView tvCustomerWelcome, @NonNull TextView tvLoadingStatus) {
+  @NonNull
+  public final TextView tvLoadingSub;
+
+  @NonNull
+  public final TextView tvMoviesCount;
+
+  @NonNull
+  public final TextView tvSectionTitle;
+
+  @NonNull
+  public final TextView tvSeriesCount;
+
+  private ActivityPlayerBinding(@NonNull FrameLayout rootView, @NonNull TextView btnBackToDashboard,
+      @NonNull LinearLayout cardLiveTv, @NonNull LinearLayout cardMovies,
+      @NonNull LinearLayout cardSeries, @NonNull LinearLayout channelInfoOverlay,
+      @NonNull EditText etSearch, @NonNull LinearLayout layoutContent,
+      @NonNull LinearLayout layoutDashboard, @NonNull LinearLayout layoutLoading,
+      @NonNull PlayerView playerView, @NonNull ProgressBar progressBarPlayer,
+      @NonNull RecyclerView rvCategories, @NonNull RecyclerView rvChannels,
+      @NonNull LinearLayout sidebarCategories, @NonNull LinearLayout sidebarChannels,
+      @NonNull TextView tvCategoryHeader, @NonNull TextView tvCurrentCategory,
+      @NonNull TextView tvCurrentChannelName, @NonNull TextView tvCustomerName,
+      @NonNull TextView tvLiveTvCount, @NonNull TextView tvLoadingStatus,
+      @NonNull TextView tvLoadingSub, @NonNull TextView tvMoviesCount,
+      @NonNull TextView tvSectionTitle, @NonNull TextView tvSeriesCount) {
     this.rootView = rootView;
-    this.btnToggleSidebar = btnToggleSidebar;
+    this.btnBackToDashboard = btnBackToDashboard;
+    this.cardLiveTv = cardLiveTv;
+    this.cardMovies = cardMovies;
+    this.cardSeries = cardSeries;
     this.channelInfoOverlay = channelInfoOverlay;
     this.etSearch = etSearch;
-    this.loadingOverlay = loadingOverlay;
+    this.layoutContent = layoutContent;
+    this.layoutDashboard = layoutDashboard;
+    this.layoutLoading = layoutLoading;
     this.playerView = playerView;
     this.progressBarPlayer = progressBarPlayer;
+    this.rvCategories = rvCategories;
     this.rvChannels = rvChannels;
-    this.sidebar = sidebar;
-    this.tabsContainer = tabsContainer;
+    this.sidebarCategories = sidebarCategories;
+    this.sidebarChannels = sidebarChannels;
+    this.tvCategoryHeader = tvCategoryHeader;
     this.tvCurrentCategory = tvCurrentCategory;
     this.tvCurrentChannelName = tvCurrentChannelName;
-    this.tvCustomerWelcome = tvCustomerWelcome;
+    this.tvCustomerName = tvCustomerName;
+    this.tvLiveTvCount = tvLiveTvCount;
     this.tvLoadingStatus = tvLoadingStatus;
+    this.tvLoadingSub = tvLoadingSub;
+    this.tvMoviesCount = tvMoviesCount;
+    this.tvSectionTitle = tvSectionTitle;
+    this.tvSeriesCount = tvSeriesCount;
   }
 
   @Override
   @NonNull
-  public LinearLayout getRoot() {
+  public FrameLayout getRoot() {
     return rootView;
   }
 
@@ -112,9 +167,27 @@ public final class ActivityPlayerBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
-      id = R.id.btnToggleSidebar;
-      TextView btnToggleSidebar = ViewBindings.findChildViewById(rootView, id);
-      if (btnToggleSidebar == null) {
+      id = R.id.btnBackToDashboard;
+      TextView btnBackToDashboard = ViewBindings.findChildViewById(rootView, id);
+      if (btnBackToDashboard == null) {
+        break missingId;
+      }
+
+      id = R.id.cardLiveTv;
+      LinearLayout cardLiveTv = ViewBindings.findChildViewById(rootView, id);
+      if (cardLiveTv == null) {
+        break missingId;
+      }
+
+      id = R.id.cardMovies;
+      LinearLayout cardMovies = ViewBindings.findChildViewById(rootView, id);
+      if (cardMovies == null) {
+        break missingId;
+      }
+
+      id = R.id.cardSeries;
+      LinearLayout cardSeries = ViewBindings.findChildViewById(rootView, id);
+      if (cardSeries == null) {
         break missingId;
       }
 
@@ -130,9 +203,21 @@ public final class ActivityPlayerBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.loadingOverlay;
-      LinearLayout loadingOverlay = ViewBindings.findChildViewById(rootView, id);
-      if (loadingOverlay == null) {
+      id = R.id.layoutContent;
+      LinearLayout layoutContent = ViewBindings.findChildViewById(rootView, id);
+      if (layoutContent == null) {
+        break missingId;
+      }
+
+      id = R.id.layoutDashboard;
+      LinearLayout layoutDashboard = ViewBindings.findChildViewById(rootView, id);
+      if (layoutDashboard == null) {
+        break missingId;
+      }
+
+      id = R.id.layoutLoading;
+      LinearLayout layoutLoading = ViewBindings.findChildViewById(rootView, id);
+      if (layoutLoading == null) {
         break missingId;
       }
 
@@ -148,21 +233,33 @@ public final class ActivityPlayerBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.rvCategories;
+      RecyclerView rvCategories = ViewBindings.findChildViewById(rootView, id);
+      if (rvCategories == null) {
+        break missingId;
+      }
+
       id = R.id.rvChannels;
       RecyclerView rvChannels = ViewBindings.findChildViewById(rootView, id);
       if (rvChannels == null) {
         break missingId;
       }
 
-      id = R.id.sidebar;
-      LinearLayout sidebar = ViewBindings.findChildViewById(rootView, id);
-      if (sidebar == null) {
+      id = R.id.sidebarCategories;
+      LinearLayout sidebarCategories = ViewBindings.findChildViewById(rootView, id);
+      if (sidebarCategories == null) {
         break missingId;
       }
 
-      id = R.id.tabsContainer;
-      LinearLayout tabsContainer = ViewBindings.findChildViewById(rootView, id);
-      if (tabsContainer == null) {
+      id = R.id.sidebarChannels;
+      LinearLayout sidebarChannels = ViewBindings.findChildViewById(rootView, id);
+      if (sidebarChannels == null) {
+        break missingId;
+      }
+
+      id = R.id.tvCategoryHeader;
+      TextView tvCategoryHeader = ViewBindings.findChildViewById(rootView, id);
+      if (tvCategoryHeader == null) {
         break missingId;
       }
 
@@ -178,9 +275,15 @@ public final class ActivityPlayerBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.tvCustomerWelcome;
-      TextView tvCustomerWelcome = ViewBindings.findChildViewById(rootView, id);
-      if (tvCustomerWelcome == null) {
+      id = R.id.tvCustomerName;
+      TextView tvCustomerName = ViewBindings.findChildViewById(rootView, id);
+      if (tvCustomerName == null) {
+        break missingId;
+      }
+
+      id = R.id.tvLiveTvCount;
+      TextView tvLiveTvCount = ViewBindings.findChildViewById(rootView, id);
+      if (tvLiveTvCount == null) {
         break missingId;
       }
 
@@ -190,10 +293,36 @@ public final class ActivityPlayerBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ActivityPlayerBinding((LinearLayout) rootView, btnToggleSidebar,
-          channelInfoOverlay, etSearch, loadingOverlay, playerView, progressBarPlayer, rvChannels,
-          sidebar, tabsContainer, tvCurrentCategory, tvCurrentChannelName, tvCustomerWelcome,
-          tvLoadingStatus);
+      id = R.id.tvLoadingSub;
+      TextView tvLoadingSub = ViewBindings.findChildViewById(rootView, id);
+      if (tvLoadingSub == null) {
+        break missingId;
+      }
+
+      id = R.id.tvMoviesCount;
+      TextView tvMoviesCount = ViewBindings.findChildViewById(rootView, id);
+      if (tvMoviesCount == null) {
+        break missingId;
+      }
+
+      id = R.id.tvSectionTitle;
+      TextView tvSectionTitle = ViewBindings.findChildViewById(rootView, id);
+      if (tvSectionTitle == null) {
+        break missingId;
+      }
+
+      id = R.id.tvSeriesCount;
+      TextView tvSeriesCount = ViewBindings.findChildViewById(rootView, id);
+      if (tvSeriesCount == null) {
+        break missingId;
+      }
+
+      return new ActivityPlayerBinding((FrameLayout) rootView, btnBackToDashboard, cardLiveTv,
+          cardMovies, cardSeries, channelInfoOverlay, etSearch, layoutContent, layoutDashboard,
+          layoutLoading, playerView, progressBarPlayer, rvCategories, rvChannels, sidebarCategories,
+          sidebarChannels, tvCategoryHeader, tvCurrentCategory, tvCurrentChannelName,
+          tvCustomerName, tvLiveTvCount, tvLoadingStatus, tvLoadingSub, tvMoviesCount,
+          tvSectionTitle, tvSeriesCount);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

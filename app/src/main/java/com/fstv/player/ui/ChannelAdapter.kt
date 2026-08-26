@@ -36,7 +36,6 @@ class ChannelAdapter(
                 }
             }
 
-            // Mudar visual ao receber/perder foco (D-pad TV)
             view.setOnFocusChangeListener { v, hasFocus ->
                 val pos = adapterPosition
                 if (pos == RecyclerView.NO_ID.toInt()) return@setOnFocusChangeListener
@@ -44,15 +43,10 @@ class ChannelAdapter(
                     v.scaleX = 1.04f
                     v.scaleY = 1.04f
                     v.elevation = 8f
-                    (v.findViewById<TextView>(R.id.tvName))?.setTextColor(0xFFFFFFFF.toInt())
                 } else {
                     v.scaleX = 1.0f
                     v.scaleY = 1.0f
                     v.elevation = 0f
-                    val isSelected = pos == selectedPosition
-                    (v.findViewById<TextView>(R.id.tvName))?.setTextColor(
-                        if (isSelected) 0xFF6366F1.toInt() else 0xCCFFFFFF.toInt()
-                    )
                 }
             }
         }
@@ -69,8 +63,10 @@ class ChannelAdapter(
 
         val isSelected = position == selectedPosition
         holder.view.isSelected = isSelected
+
+        // Texto em branco puro para leitura perfeita
         holder.tvName.setTextColor(
-            if (isSelected) 0xFF6366F1.toInt() else 0xCCFFFFFF.toInt()
+            if (isSelected) 0xFF818CF8.toInt() else 0xFFFFFFFF.toInt()
         )
 
         if (!channel.logoUrl.isNullOrEmpty()) {

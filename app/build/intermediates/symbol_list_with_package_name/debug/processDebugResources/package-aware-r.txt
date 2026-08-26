@@ -3570,6 +3570,7 @@ drawable btn_radio_off_mtrl
 drawable btn_radio_off_to_on_mtrl_animation
 drawable btn_radio_on_mtrl
 drawable btn_radio_on_to_off_mtrl_animation
+drawable card_selector
 drawable channel_item_selector
 drawable design_fab_background
 drawable design_ic_visibility
@@ -3936,8 +3937,8 @@ id browse_headers
 id browse_headers_dock
 id browse_headers_root
 id browse_title_group
+id btnBackToDashboard
 id btnCheckActivation
-id btnToggleSidebar
 id button
 id buttonPanel
 id button_start
@@ -3945,6 +3946,9 @@ id cache_measures
 id callMeasure
 id cancel_action
 id cancel_button
+id cardLiveTv
+id cardMovies
+id cardSeries
 id carryVelocity
 id center
 id centerCrop
@@ -4198,6 +4202,9 @@ id jumpToStart
 id label
 id labeled
 id layout
+id layoutContent
+id layoutDashboard
+id layoutLoading
 id lb_action_button
 id lb_control_closed_captioning
 id lb_control_fast_forward
@@ -4238,7 +4245,6 @@ id line3
 id linear
 id listMode
 id list_item
-id loadingOverlay
 id logo
 id m3_side_sheet
 id main
@@ -4402,6 +4408,7 @@ id row_content
 id row_header
 id row_header_description
 id row_index_key
+id rvCategories
 id rvChannels
 id save_non_transition_alpha
 id save_overlay_view
@@ -4437,7 +4444,8 @@ id shortcut
 id showCustom
 id showHome
 id showTitle
-id sidebar
+id sidebarCategories
+id sidebarChannels
 id sin
 id skipCollapsed
 id skipped
@@ -4474,7 +4482,6 @@ id submit_area
 id supportScrollUp
 id surface_view
 id tabMode
-id tabsContainer
 id tag_accessibility_actions
 id tag_accessibility_clickable_spans
 id tag_accessibility_heading
@@ -4529,14 +4536,23 @@ id transition_transform
 id transport_row
 id triangle
 id tvAppTitle
+id tvCategoryCount
+id tvCategoryHeader
+id tvCategoryIcon
+id tvCategoryName
 id tvCurrentCategory
 id tvCurrentChannelName
-id tvCustomerWelcome
+id tvCustomerName
 id tvDeviceKey
 id tvInstructions
+id tvLiveTvCount
 id tvLoadingStatus
+id tvLoadingSub
 id tvMacAddress
+id tvMoviesCount
 id tvName
+id tvSectionTitle
+id tvSeriesCount
 id tvStatusMessage
 id tvSubtitle
 id unchecked
@@ -4748,6 +4764,7 @@ layout exo_styled_sub_settings_list_item
 layout exo_track_selection_dialog
 layout ime_base_split_test_activity
 layout ime_secondary_split_test_activity
+layout item_category_sidebar
 layout item_channel
 layout lb_action_1_line
 layout lb_action_2_lines

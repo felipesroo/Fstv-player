@@ -44,8 +44,8 @@ class CategoryAdapter(
                 val pos = adapterPosition
                 if (pos == RecyclerView.NO_ID.toInt()) return@setOnFocusChangeListener
                 if (hasFocus) {
-                    v.scaleX = 1.04f
-                    v.scaleY = 1.04f
+                    v.scaleX = 1.03f
+                    v.scaleY = 1.03f
                     v.elevation = 6f
                 } else {
                     v.scaleX = 1.0f
@@ -69,9 +69,11 @@ class CategoryAdapter(
 
         val isSelected = position == selectedPosition
         holder.view.isSelected = isSelected
-        holder.tvName.setTextColor(
-            if (isSelected) 0xFF6366F1.toInt() else 0xFFFFFFFF.toInt()
-        )
+
+        // Texto SEMPRE branco para máxima visibilidade sobre qualquer fundo
+        holder.tvName.setTextColor(0xFFFFFFFF.toInt())
+        holder.tvIcon.setTextColor(0xFFFFFFFF.toInt())
+        holder.tvCount.setTextColor(if (isSelected) 0xFF818CF8.toInt() else 0xAAFFFFFF.toInt())
     }
 
     override fun getItemCount() = categories.size
