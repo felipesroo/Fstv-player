@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.fstv.player.app-mergeDebugResources-2:/values-v19/values-v19.xml",
+            "map": [
+                {
+                    "source": "/home/felipe/.gradle/caches/transforms-3/a88d248669bf9439832b3e411920f6ca/transformed/leanback-1.0.0/res/values-v19/values-v19.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "10",
+                        "endColumns": "12",
+                        "endOffsets": "659"
+                    }
+                }
+            ]
+        }
+    ]
+}

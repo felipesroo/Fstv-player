@@ -85,12 +85,19 @@ class ActivationActivity : AppCompatActivity() {
                     if (body != null) {
                         when (body.status) {
                             "active" -> {
+                                val playlistUrl = body.playlistUrl
+                                if (playlistUrl.isNullOrEmpty()) {
+                                    // Ativado mas sem playlist configurada ainda
+                                    binding.tvStatusMessage.text = "✅ Ativado! Aguardando o administrador configurar a playlist no painel."
+                                    binding.progressBar.visibility = View.GONE
+                                    return@launch
+                                }
                                 pollJob?.cancel()
                                 binding.tvStatusMessage.text = "✅ Dispositivo Ativado! Carregando canais..."
                                 binding.progressBar.visibility = View.VISIBLE
                                 
                                 val intent = Intent(this@ActivationActivity, PlayerActivity::class.java).apply {
-                                    putExtra("PLAYLIST_URL", body.playlistUrl)
+                                    putExtra("PLAYLIST_URL", playlistUrl)
                                     putExtra("CUSTOMER_NAME", body.customerName)
                                 }
                                 startActivity(intent)
