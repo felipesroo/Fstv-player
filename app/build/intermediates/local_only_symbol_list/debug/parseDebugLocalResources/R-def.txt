@@ -13,6 +13,7 @@ drawable channel_item_selector
 drawable tab_selector
 id btnBackToDashboard
 id btnCheckActivation
+id btnHome
 id cardLiveTv
 id cardMovies
 id cardSeries
@@ -48,6 +49,7 @@ id tvMoviesCount
 id tvName
 id tvSectionTitle
 id tvSeriesCount
+id tvSidebarHeader
 id tvStatusMessage
 id tvSubtitle
 layout activity_activation

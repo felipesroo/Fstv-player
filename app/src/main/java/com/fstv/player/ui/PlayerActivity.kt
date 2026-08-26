@@ -54,6 +54,7 @@ class PlayerActivity : AppCompatActivity() {
     // Navegação em Séries (Série -> Temporada -> Episódios)
     private var selectedShow: SeriesShowWithSeasons? = null
     private var selectedSeasonNumber: Int = 1
+    private var isViewingSeriesEpisodes = false
 
     private lateinit var categoryAdapter: CategoryAdapter
     private lateinit var channelAdapter: ChannelAdapter

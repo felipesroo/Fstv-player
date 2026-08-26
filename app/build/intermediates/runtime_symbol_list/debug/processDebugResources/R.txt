@@ -3938,6 +3938,7 @@ int id browse_headers_root 0x7f0b007c
 int id browse_title_group 0x7f0b007d
 int id btnBackToDashboard 0x7f0b02f5
 int id btnCheckActivation 0x7f0b007e
+int id btnHome 0x7f0b0309
 int id button 0x7f0b0080
 int id buttonPanel 0x7f0b0081
 int id button_start 0x7f0b0082
@@ -4552,6 +4553,7 @@ int id tvMoviesCount 0x7f0b0306
 int id tvName 0x7f0b02d6
 int id tvSectionTitle 0x7f0b0307
 int id tvSeriesCount 0x7f0b0308
+int id tvSidebarHeader 0x7f0b030a
 int id tvStatusMessage 0x7f0b02d7
 int id tvSubtitle 0x7f0b02d8
 int id unchecked 0x7f0b02d9

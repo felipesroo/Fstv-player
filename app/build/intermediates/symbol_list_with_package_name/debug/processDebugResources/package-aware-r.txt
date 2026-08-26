@@ -3939,6 +3939,7 @@ id browse_headers_root
 id browse_title_group
 id btnBackToDashboard
 id btnCheckActivation
+id btnHome
 id button
 id buttonPanel
 id button_start
@@ -4553,6 +4554,7 @@ id tvMoviesCount
 id tvName
 id tvSectionTitle
 id tvSeriesCount
+id tvSidebarHeader
 id tvStatusMessage
 id tvSubtitle
 id unchecked
