@@ -39,6 +39,24 @@
             android:textSize="14sp"
             android:layout_marginTop="8dp" />
 
+        <TextView
+            android:id="@+id/btnRetryLoading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔄 Tentar Novamente"
+            android:textColor="#FFFFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/tab_selector"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:layout_marginTop="24dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:visibility="gone" />
+
     </LinearLayout>
 
     <!-- 2. DASHBOARD / MENU PRINCIPAL (Canais, Filmes, Séries) -->

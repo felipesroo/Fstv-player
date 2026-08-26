@@ -3939,6 +3939,7 @@ int id browse_title_group 0x7f0b007d
 int id btnBackToDashboard 0x7f0b02f5
 int id btnCheckActivation 0x7f0b007e
 int id btnHome 0x7f0b0309
+int id btnRetryLoading 0x7f0b030b
 int id button 0x7f0b0080
 int id buttonPanel 0x7f0b0081
 int id button_start 0x7f0b0082

@@ -31,6 +31,9 @@ public final class ActivityPlayerBinding implements ViewBinding {
   public final TextView btnHome;
 
   @NonNull
+  public final TextView btnRetryLoading;
+
+  @NonNull
   public final LinearLayout cardLiveTv;
 
   @NonNull
@@ -106,7 +109,8 @@ public final class ActivityPlayerBinding implements ViewBinding {
   public final TextView tvSidebarHeader;
 
   private ActivityPlayerBinding(@NonNull FrameLayout rootView, @NonNull TextView btnBackToDashboard,
-      @NonNull TextView btnHome, @NonNull LinearLayout cardLiveTv, @NonNull LinearLayout cardMovies,
+      @NonNull TextView btnHome, @NonNull TextView btnRetryLoading,
+      @NonNull LinearLayout cardLiveTv, @NonNull LinearLayout cardMovies,
       @NonNull LinearLayout cardSeries, @NonNull LinearLayout channelInfoOverlay,
       @NonNull EditText etSearch, @NonNull LinearLayout layoutContent,
       @NonNull LinearLayout layoutDashboard, @NonNull LinearLayout layoutLoading,
@@ -122,6 +126,7 @@ public final class ActivityPlayerBinding implements ViewBinding {
     this.rootView = rootView;
     this.btnBackToDashboard = btnBackToDashboard;
     this.btnHome = btnHome;
+    this.btnRetryLoading = btnRetryLoading;
     this.cardLiveTv = cardLiveTv;
     this.cardMovies = cardMovies;
     this.cardSeries = cardSeries;
@@ -185,6 +190,12 @@ public final class ActivityPlayerBinding implements ViewBinding {
       id = R.id.btnHome;
       TextView btnHome = ViewBindings.findChildViewById(rootView, id);
       if (btnHome == null) {
+        break missingId;
+      }
+
+      id = R.id.btnRetryLoading;
+      TextView btnRetryLoading = ViewBindings.findChildViewById(rootView, id);
+      if (btnRetryLoading == null) {
         break missingId;
       }
 
@@ -339,11 +350,11 @@ public final class ActivityPlayerBinding implements ViewBinding {
       }
 
       return new ActivityPlayerBinding((FrameLayout) rootView, btnBackToDashboard, btnHome,
-          cardLiveTv, cardMovies, cardSeries, channelInfoOverlay, etSearch, layoutContent,
-          layoutDashboard, layoutLoading, playerView, progressBarPlayer, rvCategories, rvChannels,
-          sidebarCategories, sidebarChannels, tvCategoryHeader, tvCurrentCategory,
-          tvCurrentChannelName, tvCustomerName, tvLiveTvCount, tvLoadingStatus, tvLoadingSub,
-          tvMoviesCount, tvSectionTitle, tvSeriesCount, tvSidebarHeader);
+          btnRetryLoading, cardLiveTv, cardMovies, cardSeries, channelInfoOverlay, etSearch,
+          layoutContent, layoutDashboard, layoutLoading, playerView, progressBarPlayer,
+          rvCategories, rvChannels, sidebarCategories, sidebarChannels, tvCategoryHeader,
+          tvCurrentCategory, tvCurrentChannelName, tvCustomerName, tvLiveTvCount, tvLoadingStatus,
+          tvLoadingSub, tvMoviesCount, tvSectionTitle, tvSeriesCount, tvSidebarHeader);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

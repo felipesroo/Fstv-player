@@ -14,6 +14,7 @@ drawable tab_selector
 id btnBackToDashboard
 id btnCheckActivation
 id btnHome
+id btnRetryLoading
 id cardLiveTv
 id cardMovies
 id cardSeries

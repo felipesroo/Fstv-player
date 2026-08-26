@@ -3940,6 +3940,7 @@ id browse_title_group
 id btnBackToDashboard
 id btnCheckActivation
 id btnHome
+id btnRetryLoading
 id button
 id buttonPanel
 id button_start
