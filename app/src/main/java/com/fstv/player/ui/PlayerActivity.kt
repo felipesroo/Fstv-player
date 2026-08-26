@@ -8,7 +8,6 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.KeyEvent
 import android.view.View
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -25,17 +24,28 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
+enum class SectionType { LIVE_TV, MOVIES, SERIES }
+
 class PlayerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPlayerBinding
     private var exoPlayer: ExoPlayer? = null
-    private var allChannels: List<ChannelItem> = emptyList()
-    private var filteredChannels: List<ChannelItem> = emptyList()
-    private var categories: List<String> = emptyList()
-    private var currentCategory: String = "Todos"
+
+    // Listas filtradas por tipo de conteúdo
+    private var liveTvList: List<ChannelItem> = emptyList()
+    private var moviesList: List<ChannelItem> = emptyList()
+    private var seriesList: List<ChannelItem> = emptyList()
+
+    // Estado da tela atual
+    private var currentSection: SectionType = SectionType.LIVE_TV
+    private var currentSectionChannels: List<ChannelItem> = emptyList()
+    private var currentCategoryChannels: List<ChannelItem> = emptyList()
+    private var currentSelectedCategoryName: String = "Todos"
+
+    private lateinit var categoryAdapter: CategoryAdapter
     private lateinit var channelAdapter: ChannelAdapter
+
     private val channelInfoHandler = Handler(Looper.getMainLooper())
-    private var sidebarVisible = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,12 +55,12 @@ class PlayerActivity : AppCompatActivity() {
         val playlistUrl = intent.getStringExtra("PLAYLIST_URL")
         val customerName = intent.getStringExtra("CUSTOMER_NAME") ?: "Cliente"
 
-        binding.tvCustomerWelcome.text = customerName
+        binding.tvCustomerName.text = "👋 Olá, $customerName"
 
         initPlayer()
-        setupRecyclerView()
+        setupRecyclerViews()
+        setupDashboardCards()
         setupSearch()
-        setupToggleButton()
 
         if (playlistUrl.isNullOrEmpty()) {
             Toast.makeText(this, "Nenhuma URL de playlist fornecida", Toast.LENGTH_LONG).show()
@@ -61,159 +71,63 @@ class PlayerActivity : AppCompatActivity() {
         loadPlaylist(playlistUrl)
     }
 
-    private fun setupToggleButton() {
-        binding.btnToggleSidebar.setOnClickListener { toggleSidebar() }
-    }
-
-    private fun toggleSidebar() {
-        sidebarVisible = !sidebarVisible
-        binding.sidebar.visibility = if (sidebarVisible) View.VISIBLE else View.GONE
-        if (sidebarVisible) {
-            binding.rvChannels.requestFocus()
-        } else {
-            binding.playerView.requestFocus()
-        }
-    }
-
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_MENU,
-            KeyEvent.KEYCODE_DPAD_LEFT -> {
-                if (!sidebarVisible) {
-                    toggleSidebar()
-                    true
-                } else super.onKeyDown(keyCode, event)
-            }
-            KeyEvent.KEYCODE_BACK -> {
-                if (sidebarVisible) {
-                    toggleSidebar()
-                    true
-                } else super.onKeyDown(keyCode, event)
-            }
-            else -> super.onKeyDown(keyCode, event)
-        }
-    }
-
     private fun initPlayer() {
         exoPlayer = ExoPlayer.Builder(this).build()
         binding.playerView.player = exoPlayer
         binding.playerView.useController = true
     }
 
-    private fun setupRecyclerView() {
+    private fun setupRecyclerViews() {
+        // 1. Adapter da Sidebar Vertical de Categorias
+        categoryAdapter = CategoryAdapter(emptyList()) { categoryInfo ->
+            selectCategory(categoryInfo.name)
+        }
+        binding.rvCategories.layoutManager = LinearLayoutManager(this)
+        binding.rvCategories.adapter = categoryAdapter
+
+        // 2. Adapter da Lista de Canais/Filmes
         channelAdapter = ChannelAdapter(emptyList()) { channel, _ ->
             playChannel(channel)
-            // Fechar sidebar ao selecionar canal
-            sidebarVisible = false
-            binding.sidebar.visibility = View.GONE
-            binding.playerView.requestFocus()
         }
         binding.rvChannels.layoutManager = LinearLayoutManager(this)
         binding.rvChannels.adapter = channelAdapter
+
+        // 3. Botão Voltar ao Menu
+        binding.btnBackToDashboard.setOnClickListener {
+            showDashboard()
+        }
+    }
+
+    private fun setupDashboardCards() {
+        // Animação de foco nos cards do dashboard (D-pad)
+        val cards = listOf(binding.cardLiveTv, binding.cardMovies, binding.cardSeries)
+        for (card in cards) {
+            card.setOnFocusChangeListener { v, hasFocus ->
+                v.scaleX = if (hasFocus) 1.05f else 1.0f
+                v.scaleY = if (hasFocus) 1.05f else 1.0f
+                v.elevation = if (hasFocus) 12f else 0f
+            }
+        }
+
+        binding.cardLiveTv.setOnClickListener { openSection(SectionType.LIVE_TV) }
+        binding.cardMovies.setOnClickListener { openSection(SectionType.MOVIES) }
+        binding.cardSeries.setOnClickListener { openSection(SectionType.SERIES) }
     }
 
     private fun setupSearch() {
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                filterChannels(s?.toString() ?: "")
+                filterCurrentCategory(s?.toString() ?: "")
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
     }
 
-    private fun filterChannels(query: String) {
-        val base = if (currentCategory == "Todos") allChannels
-                   else allChannels.filter { it.category.equals(currentCategory, ignoreCase = true) }
-
-        filteredChannels = if (query.isEmpty()) base
-                           else base.filter { it.name.contains(query, ignoreCase = true) }
-
-        channelAdapter.updateList(filteredChannels)
-    }
-
-    private fun buildCategoryTabs() {
-        binding.tabsContainer.removeAllViews()
-
-        val allCats = listOf("Todos") + categories
-
-        // Identificar categorias conhecidas
-        val mainCats = mutableListOf<String>()
-        val outros = mutableListOf<String>()
-
-        for (cat in allCats) {
-            val lower = cat.lowercase()
-            val isMain = lower == "todos" ||
-                lower.contains("canal") ||
-                lower.contains("live") ||
-                lower.contains("ao vivo") ||
-                lower.contains("filme") ||
-                lower.contains("movie") ||
-                lower.contains("serie") ||
-                lower.contains("séri") ||
-                lower.contains("esport") ||
-                lower.contains("adult") ||
-                lower.contains("kids") ||
-                lower.contains("notic") ||
-                lower.contains("sport")
-            if (isMain) mainCats.add(cat) else outros.add(cat)
-        }
-
-        val orderedCats = mainCats + outros
-
-        for (cat in orderedCats) {
-            val isActive = cat == currentCategory
-            val tab = TextView(this).apply {
-                text = categoryLabel(cat)
-                textSize = 12f
-                setPadding(24, 10, 24, 10)
-                isFocusable = true
-                isClickable = true
-                isSelected = isActive
-                setTextColor(if (isActive) 0xFFFFFFFF.toInt() else 0xAAFFFFFF.toInt())
-                background = resources.getDrawable(R.drawable.tab_selector, theme)
-                layoutParams = android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                ).also { it.setMargins(4, 4, 4, 4) }
-
-                // Animação ao focar (D-pad)
-                setOnFocusChangeListener { v, hasFocus ->
-                    v.scaleX = if (hasFocus) 1.08f else 1.0f
-                    v.scaleY = if (hasFocus) 1.08f else 1.0f
-                    v.elevation = if (hasFocus) 10f else 0f
-                }
-
-                setOnClickListener {
-                    currentCategory = cat
-                    binding.etSearch.text?.clear()
-                    filterChannels("")
-                    buildCategoryTabs()
-                    // Scroll para o topo após trocar categoria
-                    binding.rvChannels.scrollToPosition(0)
-                }
-            }
-            binding.tabsContainer.addView(tab)
-        }
-    }
-
-    private fun categoryLabel(cat: String): String {
-        val lower = cat.lowercase()
-        return when {
-            lower == "todos" -> "📺 Todos"
-            lower.contains("canal") || lower.contains("live") || lower.contains("ao vivo") -> "📡 ${cat}"
-            lower.contains("filme") || lower.contains("movie") -> "🎬 ${cat}"
-            lower.contains("serie") || lower.contains("séri") -> "🎭 ${cat}"
-            lower.contains("esport") || lower.contains("sport") -> "⚽ ${cat}"
-            lower.contains("kids") || lower.contains("infant") -> "🧒 ${cat}"
-            lower.contains("adult") || lower.contains("xxx") -> "🔞 ${cat}"
-            else -> cat
-        }
-    }
-
     private fun loadPlaylist(url: String) {
-        binding.loadingOverlay.visibility = View.VISIBLE
-        binding.tvLoadingStatus.text = "Carregando lista M3U..."
+        binding.layoutLoading.visibility = View.VISIBLE
+        binding.layoutDashboard.visibility = View.GONE
+        binding.layoutContent.visibility = View.GONE
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
@@ -231,34 +145,40 @@ class PlayerActivity : AppCompatActivity() {
 
                 if (response.isSuccessful) {
                     val inputStream = response.body?.byteStream()
-                    allChannels = if (inputStream != null) M3uParser.parseStream(inputStream) else emptyList()
-                    filteredChannels = allChannels
+                    val allChannels = if (inputStream != null) M3uParser.parseStream(inputStream) else emptyList()
 
-                    // Extrair categorias únicas
-                    categories = allChannels.map { it.category }.distinct().sorted()
+                    // Categorizar itens em Canais, Filmes e Séries
+                    val liveTv = mutableListOf<ChannelItem>()
+                    val movies = mutableListOf<ChannelItem>()
+                    val series = mutableListOf<ChannelItem>()
+
+                    for (item in allChannels) {
+                        val cat = item.category.lowercase()
+                        val urlLower = item.streamUrl.lowercase()
+                        when {
+                            cat.contains("filme") || cat.contains("movie") || cat.contains("vod") || urlLower.contains("/movie/") || urlLower.endsWith(".mp4") || urlLower.endsWith(".mkv") -> {
+                                movies.add(item)
+                            }
+                            cat.contains("serie") || cat.contains("série") || cat.contains("series") || cat.contains("temporada") || urlLower.contains("/series/") -> {
+                                series.add(item)
+                            }
+                            else -> {
+                                liveTv.add(item)
+                            }
+                        }
+                    }
+
+                    liveTvList = liveTv
+                    moviesList = movies
+                    seriesList = series
 
                     withContext(Dispatchers.Main) {
-                        binding.loadingOverlay.visibility = View.GONE
-                        if (allChannels.isNotEmpty()) {
-                            channelAdapter.updateList(allChannels)
-                            buildCategoryTabs()
+                        binding.layoutLoading.visibility = View.GONE
+                        binding.tvLiveTvCount.text = "${liveTvList.size} canais"
+                        binding.tvMoviesCount.text = "${moviesList.size} filmes"
+                        binding.tvSeriesCount.text = "${seriesList.size} séries"
 
-                            // Abrir sidebar automaticamente
-                            sidebarVisible = true
-                            binding.sidebar.visibility = View.VISIBLE
-
-                            // Reproduzir primeiro canal automaticamente
-                            playChannel(allChannels[0])
-
-                            Toast.makeText(
-                                this@PlayerActivity,
-                                "✅ ${allChannels.size} canais em ${categories.size} categorias",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        } else {
-                            binding.tvLoadingStatus.text = "Lista vazia ou inválida."
-                            binding.loadingOverlay.visibility = View.VISIBLE
-                        }
+                        showDashboard()
                     }
                 } else {
                     withContext(Dispatchers.Main) {
@@ -270,6 +190,99 @@ class PlayerActivity : AppCompatActivity() {
                     binding.tvLoadingStatus.text = "Erro de rede: ${e.message}"
                 }
             }
+        }
+    }
+
+    private fun showDashboard() {
+        exoPlayer?.pause()
+        binding.layoutLoading.visibility = View.GONE
+        binding.layoutContent.visibility = View.GONE
+        binding.layoutDashboard.visibility = View.VISIBLE
+        binding.cardLiveTv.requestFocus()
+    }
+
+    private fun openSection(section: SectionType) {
+        currentSection = section
+        binding.layoutDashboard.visibility = View.GONE
+        binding.layoutContent.visibility = View.VISIBLE
+
+        when (section) {
+            SectionType.LIVE_TV -> {
+                binding.tvSectionTitle.text = "📡 Canais ao Vivo (${liveTvList.size})"
+                currentSectionChannels = liveTvList
+            }
+            SectionType.MOVIES -> {
+                binding.tvSectionTitle.text = "🎬 Filmes (${moviesList.size})"
+                currentSectionChannels = moviesList
+            }
+            SectionType.SERIES -> {
+                binding.tvSectionTitle.text = "🎭 Séries (${seriesList.size})"
+                currentSectionChannels = seriesList
+            }
+        }
+
+        // Construir lista de categorias da sidebar vertical
+        val categoryMap = mutableMapOf<String, Int>()
+        for (item in currentSectionChannels) {
+            val catName = if (item.category.isEmpty()) "Geral" else item.category
+            categoryMap[catName] = (categoryMap[catName] ?: 0) + 1
+        }
+
+        val categoryListInfo = mutableListOf<CategoryItemInfo>()
+        categoryListInfo.add(CategoryItemInfo("Todos", currentSectionChannels.size, "📺"))
+
+        for ((catName, count) in categoryMap.entries.sortedBy { it.key }) {
+            val icon = getCategoryIcon(catName)
+            categoryListInfo.add(CategoryItemInfo(catName, count, icon))
+        }
+
+        categoryAdapter.updateList(categoryListInfo)
+        binding.rvCategories.requestFocus()
+
+        // Selecionar "Todos" por padrão
+        selectCategory("Todos")
+    }
+
+    private fun selectCategory(categoryName: String) {
+        currentSelectedCategoryName = categoryName
+        binding.tvCategoryHeader.text = "ITENS DA CATEGORIA: ${categoryName.uppercase()}"
+        binding.etSearch.text?.clear()
+
+        currentCategoryChannels = if (categoryName == "Todos") {
+            currentSectionChannels
+        } else {
+            currentSectionChannels.filter { it.category.equals(categoryName, ignoreCase = true) }
+        }
+
+        channelAdapter.updateList(currentCategoryChannels)
+        binding.rvChannels.scrollToPosition(0)
+
+        // Se houver canais e for TV ao vivo, tocar primeiro automaticamente
+        if (currentCategoryChannels.isNotEmpty() && currentSection == SectionType.LIVE_TV) {
+            playChannel(currentCategoryChannels[0])
+        }
+    }
+
+    private fun filterCurrentCategory(query: String) {
+        val filtered = if (query.isEmpty()) {
+            currentCategoryChannels
+        } else {
+            currentCategoryChannels.filter { it.name.contains(query, ignoreCase = true) }
+        }
+        channelAdapter.updateList(filtered)
+    }
+
+    private fun getCategoryIcon(cat: String): String {
+        val lower = cat.lowercase()
+        return when {
+            lower.contains("canal") || lower.contains("live") || lower.contains("tv") -> "📡"
+            lower.contains("filme") || lower.contains("movie") || lower.contains("vod") -> "🎬"
+            lower.contains("serie") || lower.contains("séri") -> "🎭"
+            lower.contains("esport") || lower.contains("sport") || lower.contains("futebol") -> "⚽"
+            lower.contains("kids") || lower.contains("desenho") || lower.contains("infant") -> "🧒"
+            lower.contains("adult") || lower.contains("xxx") -> "🔞"
+            lower.contains("notic") || lower.contains("news") -> "📰"
+            else -> "📁"
         }
     }
 
@@ -288,7 +301,17 @@ class PlayerActivity : AppCompatActivity() {
         channelInfoHandler.removeCallbacksAndMessages(null)
         channelInfoHandler.postDelayed({
             binding.channelInfoOverlay.visibility = View.GONE
-        }, 3000)
+        }, 4000)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (binding.layoutContent.visibility == View.VISIBLE) {
+                showDashboard()
+                return true
+            }
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     override fun onDestroy() {
