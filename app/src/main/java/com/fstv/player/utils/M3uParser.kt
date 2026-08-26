@@ -14,9 +14,8 @@ data class ChannelItem(
 object M3uParser {
 
     fun parseStream(inputStream: InputStream): List<ChannelItem> {
-        val channels = ArrayList<ChannelItem>(20000)
-        // Usar buffer expandido de 64KB para leitura máxima de velocidade
-        val reader = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8), 65536)
+        val channels = ArrayList<ChannelItem>(15000)
+        val reader = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8), 32768)
 
         var currentTitle = ""
         var currentLogo: String? = null
@@ -24,53 +23,50 @@ object M3uParser {
 
         var line: String? = reader.readLine()
         while (line != null) {
-            val len = line.length
-            if (len == 0) {
+            val trimmed = line.trim()
+            if (trimmed.isEmpty()) {
                 line = reader.readLine()
                 continue
             }
 
-            if (line.startsWith("#EXTINF:", ignoreCase = true)) {
-                val lastComma = line.lastIndexOf(',')
-                currentTitle = if (lastComma != -1 && lastComma < len - 1) {
-                    line.substring(lastComma + 1).trim()
+            if (trimmed.startsWith("#EXTINF:", ignoreCase = true)) {
+                val lastComma = trimmed.lastIndexOf(',')
+                currentTitle = if (lastComma != -1 && lastComma < trimmed.length - 1) {
+                    trimmed.substring(lastComma + 1).trim()
                 } else {
                     "Canal sem Nome"
                 }
 
-                val gtIdx = line.indexOf("group-title=\"")
+                val gtIdx = trimmed.indexOf("group-title=\"")
                 currentGroup = if (gtIdx != -1) {
                     val start = gtIdx + 13
-                    val end = line.indexOf('"', start)
-                    if (end != -1) line.substring(start, end).trim() else "Geral"
+                    val end = trimmed.indexOf('"', start)
+                    if (end != -1) trimmed.substring(start, end).trim() else "Geral"
                 } else {
                     "Geral"
                 }
                 if (currentGroup.isEmpty()) currentGroup = "Geral"
 
-                val logoIdx = line.indexOf("tvg-logo=\"")
+                val logoIdx = trimmed.indexOf("tvg-logo=\"")
                 currentLogo = if (logoIdx != -1) {
                     val start = logoIdx + 10
-                    val end = line.indexOf('"', start)
-                    if (end != -1) line.substring(start, end).trim() else null
+                    val end = trimmed.indexOf('"', start)
+                    if (end != -1) trimmed.substring(start, end).trim() else null
                 } else null
 
-            } else if (line[0] != '#') {
-                val trimmedUrl = line.trim()
-                if (trimmedUrl.isNotEmpty()) {
-                    val nameToUse = if (currentTitle.isNotEmpty()) currentTitle else "Canal ${channels.size + 1}"
-                    channels.add(
-                        ChannelItem(
-                            name = nameToUse,
-                            streamUrl = trimmedUrl,
-                            logoUrl = currentLogo,
-                            category = currentGroup
-                        )
+            } else if (!trimmed.startsWith("#")) {
+                val nameToUse = if (currentTitle.isNotEmpty()) currentTitle else "Canal ${channels.size + 1}"
+                channels.add(
+                    ChannelItem(
+                        name = nameToUse,
+                        streamUrl = trimmed,
+                        logoUrl = currentLogo,
+                        category = currentGroup
                     )
-                    currentTitle = ""
-                    currentLogo = null
-                    currentGroup = "Geral"
-                }
+                )
+                currentTitle = ""
+                currentLogo = null
+                currentGroup = "Geral"
             }
             line = reader.readLine()
         }

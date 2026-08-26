@@ -163,45 +163,39 @@ class PlayerActivity : AppCompatActivity() {
         val cacheFile = File(cacheDir, "cached_playlist.m3u")
 
         lifecycleScope.launch(Dispatchers.IO) {
-            var loadedFromCache = false
-
-            // 1. Tentar ler do Cache Local primeiro
-            if (cacheFile.exists() && cacheFile.length() > 10240) {
-                withContext(Dispatchers.Main) {
-                    binding.tvLoadingStatus.text = "Iniciando aplicativo..."
-                }
+            // 1. Se existir cache local (> 1KB), carregar INSTANTANEAMENTE (< 0.5s)
+            if (cacheFile.exists() && cacheFile.length() > 1024) {
                 try {
                     val stream = FileInputStream(cacheFile)
                     val channels = M3uParser.parseStream(stream)
                     stream.close()
                     if (channels.isNotEmpty()) {
-                        loadedFromCache = true
                         processAndDisplayChannels(channels)
+                        // Baixar atualização da lista em segundo plano sem bloquear o usuário
+                        downloadAndCachePlaylist(url, cacheFile, updateUi = false)
+                        return@launch
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
 
-            // 2. Se não tinha cache, mostrar tela de progresso rápido
-            if (!loadedFromCache) {
-                withContext(Dispatchers.Main) {
-                    binding.layoutLoading.visibility = View.VISIBLE
-                    binding.progressBarPlayer.visibility = View.VISIBLE
-                    binding.btnRetryLoading.visibility = View.GONE
-                    binding.tvLoadingStatus.text = "Baixando lista de canais..."
-                    binding.tvLoadingSub.text = "Otimizando download em alta velocidade..."
-                }
+            // 2. Se não tinha cache, mostrar tela de carregamento e baixar
+            withContext(Dispatchers.Main) {
+                binding.layoutLoading.visibility = View.VISIBLE
+                binding.progressBarPlayer.visibility = View.VISIBLE
+                binding.btnRetryLoading.visibility = View.GONE
+                binding.tvLoadingStatus.text = "Carregando lista de canais..."
+                binding.tvLoadingSub.text = "Obtendo dados do servidor IPTV..."
             }
 
-            // 3. Baixar versão com compressão GZIP ativada
-            val downloadOk = downloadAndCachePlaylist(url, cacheFile)
+            val downloadOk = downloadAndCachePlaylist(url, cacheFile, updateUi = true)
 
-            if (!loadedFromCache && !downloadOk) {
+            if (!downloadOk) {
                 withContext(Dispatchers.Main) {
                     binding.progressBarPlayer.visibility = View.GONE
                     binding.tvLoadingStatus.text = "❌ Não foi possível carregar a lista"
-                    binding.tvLoadingSub.text = "Verifique sua conexão ou tente novamente."
+                    binding.tvLoadingSub.text = "Verifique sua conexão ou toque em Tentar Novamente."
                     binding.btnRetryLoading.visibility = View.VISIBLE
                     binding.btnRetryLoading.requestFocus()
                 }
@@ -209,12 +203,11 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun downloadAndCachePlaylist(url: String, cacheFile: File): Boolean {
+    private suspend fun downloadAndCachePlaylist(url: String, cacheFile: File, updateUi: Boolean): Boolean {
         return try {
             val request = Request.Builder()
                 .url(url)
                 .header("User-Agent", "IPTVSmartersPro/1.0.0")
-                .header("Accept-Encoding", "gzip, deflate")
                 .build()
 
             val response = okHttpClient.newCall(request).execute()
@@ -231,12 +224,16 @@ class PlayerActivity : AppCompatActivity() {
                         tempFile.copyTo(cacheFile, overwrite = true)
                         tempFile.delete()
 
-                        val stream = FileInputStream(cacheFile)
-                        val updatedChannels = M3uParser.parseStream(stream)
-                        stream.close()
+                        if (updateUi) {
+                            val stream = FileInputStream(cacheFile)
+                            val updatedChannels = M3uParser.parseStream(stream)
+                            stream.close()
 
-                        if (updatedChannels.isNotEmpty()) {
-                            processAndDisplayChannels(updatedChannels)
+                            if (updatedChannels.isNotEmpty()) {
+                                processAndDisplayChannels(updatedChannels)
+                                return true
+                            }
+                        } else {
                             return true
                         }
                     }
