@@ -10,6 +10,7 @@ color text_muted
 color text_white
 drawable card_selector
 drawable channel_item_selector
+drawable fstv_banner
 drawable tab_selector
 id btnBackToDashboard
 id btnCheckActivation

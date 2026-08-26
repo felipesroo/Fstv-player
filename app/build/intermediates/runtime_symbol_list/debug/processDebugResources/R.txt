@@ -3655,6 +3655,7 @@ int drawable exo_styled_controls_speed 0x7f0800d1
 int drawable exo_styled_controls_subtitle_off 0x7f0800d2
 int drawable exo_styled_controls_subtitle_on 0x7f0800d3
 int drawable exo_styled_controls_vr 0x7f0800d4
+int drawable fstv_banner 0x7f080167
 int drawable ic_arrow_back_black_24 0x7f0800d5
 int drawable ic_call_answer 0x7f0800d6
 int drawable ic_call_answer_low 0x7f0800d7
