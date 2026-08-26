@@ -8,6 +8,8 @@ color btn_focus
 color card_bg
 color text_muted
 color text_white
+drawable channel_item_selector
+drawable tab_selector
 id btnCheckActivation
 id btnToggleSidebar
 id channelInfoOverlay

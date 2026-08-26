@@ -15,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.fstv.player.R
 import com.fstv.player.databinding.ActivityPlayerBinding
 import com.fstv.player.utils.ChannelItem
 import com.fstv.player.utils.M3uParser
