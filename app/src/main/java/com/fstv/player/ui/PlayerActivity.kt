@@ -17,6 +17,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.fstv.player.databinding.ActivityPlayerBinding
 import com.fstv.player.utils.ChannelItem
 import com.fstv.player.utils.M3uParser
+import com.fstv.player.utils.SeriesHelper
+import com.fstv.player.utils.SeriesShowWithSeasons
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,16 +35,25 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPlayerBinding
     private var exoPlayer: ExoPlayer? = null
 
-    // Listas por Seção (Canais, Filmes, Séries)
+    // Listas por Seção
     private var liveTvList: List<ChannelItem> = emptyList()
     private var moviesList: List<ChannelItem> = emptyList()
     private var seriesList: List<ChannelItem> = emptyList()
 
-    // Estado da tela atual
+    // Séries Pré-Agrupadas por Título e Temporadas
+    private var preGroupedSeriesShows: List<SeriesShowWithSeasons> = emptyList()
+    private var preGroupedSeriesChannels: List<ChannelItem> = emptyList()
+
+    // Estado de Navegação Atual
     private var currentSection: SectionType = SectionType.LIVE_TV
     private var currentSectionChannels: List<ChannelItem> = emptyList()
     private var currentCategoryChannels: List<ChannelItem> = emptyList()
     private var currentSelectedCategoryName: String = "Todos"
+
+    // Seleção de Série e Temporada (Série -> Temporada -> Episódios)
+    private var selectedShow: SeriesShowWithSeasons? = null
+    private var selectedSeasonNumber: Int = 1
+    private var isViewingSeriesEpisodes: Boolean = false
 
     private lateinit var categoryAdapter: CategoryAdapter
     private lateinit var channelAdapter: ChannelAdapter
@@ -86,13 +97,20 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun setupRecyclerViews() {
         categoryAdapter = CategoryAdapter(emptyList()) { categoryInfo ->
-            selectCategory(categoryInfo.name)
+            if (selectedShow != null) {
+                // Selecionar Temporada dentro da Série
+                val tempNum = categoryInfo.name.removePrefix("Temporada ").toIntOrNull() ?: 1
+                selectSeason(tempNum)
+            } else {
+                // Selecionar Categoria normal
+                selectCategory(categoryInfo.name)
+            }
         }
         binding.rvCategories.layoutManager = LinearLayoutManager(this)
         binding.rvCategories.adapter = categoryAdapter
 
         channelAdapter = ChannelAdapter(emptyList()) { channel, _ ->
-            playChannel(channel)
+            onItemClicked(channel)
         }
         binding.rvChannels.layoutManager = LinearLayoutManager(this)
         binding.rvChannels.adapter = channelAdapter
@@ -102,7 +120,7 @@ class PlayerActivity : AppCompatActivity() {
         }
 
         binding.btnBackToDashboard.setOnClickListener {
-            showDashboard()
+            handleBackStep()
         }
     }
 
@@ -131,16 +149,12 @@ class PlayerActivity : AppCompatActivity() {
         })
     }
 
-    /**
-     * Carregamento Rápido com Cache Local + Processamento Direto de Categorias Nativas
-     */
     private fun startFastPlaylistLoad(url: String) {
         val cacheFile = File(cacheDir, "cached_playlist.m3u")
 
         lifecycleScope.launch(Dispatchers.IO) {
             var loadedFromCache = false
 
-            // 1. Carregar do Cache Local se existir (> 10KB)
             if (cacheFile.exists() && cacheFile.length() > 10240) {
                 withContext(Dispatchers.Main) {
                     binding.tvLoadingStatus.text = "Iniciando lista em cache..."
@@ -158,7 +172,6 @@ class PlayerActivity : AppCompatActivity() {
                 }
             }
 
-            // 2. Exibir UI de Download se não carregou do cache
             if (!loadedFromCache) {
                 withContext(Dispatchers.Main) {
                     binding.layoutLoading.visibility = View.VISIBLE
@@ -169,14 +182,13 @@ class PlayerActivity : AppCompatActivity() {
                 }
             }
 
-            // 3. Baixar versão atualizada do servidor
             val downloadOk = downloadAndCachePlaylist(url, cacheFile)
 
             if (!loadedFromCache && !downloadOk) {
                 withContext(Dispatchers.Main) {
                     binding.progressBarPlayer.visibility = View.GONE
                     binding.tvLoadingStatus.text = "❌ Não foi possível baixar a lista"
-                    binding.tvLoadingSub.text = "Verifique sua conexão de rede ou suporte."
+                    binding.tvLoadingSub.text = "Verifique sua conexão ou tente novamente."
                     binding.btnRetryLoading.visibility = View.VISIBLE
                     binding.btnRetryLoading.requestFocus()
                 }
@@ -254,15 +266,30 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
 
+        // Agrupamento de Séries por Título e Temporadas em background
+        val groupedShows = SeriesHelper.groupEpisodesByShowAndSeason(series)
+        val groupedChannels = groupedShows.map { show ->
+            val totalSeasons = show.seasonsMap.size
+            val totalEpisodes = show.seasonsMap.values.sumOf { it.size }
+            ChannelItem(
+                name = "🎭 ${show.title} ($totalSeasons Temp. | $totalEpisodes Ep.)",
+                streamUrl = "SERIES_SHOW:${show.title}",
+                logoUrl = show.logoUrl,
+                category = show.category
+            )
+        }
+
         liveTvList = liveTv
         moviesList = movies
         seriesList = series
+        preGroupedSeriesShows = groupedShows
+        preGroupedSeriesChannels = groupedChannels
 
         withContext(Dispatchers.Main) {
             binding.layoutLoading.visibility = View.GONE
             binding.tvLiveTvCount.text = "${liveTvList.size} canais"
             binding.tvMoviesCount.text = "${moviesList.size} filmes"
-            binding.tvSeriesCount.text = "${seriesList.size} itens"
+            binding.tvSeriesCount.text = "${groupedShows.size} séries"
 
             if (binding.layoutDashboard.visibility != View.VISIBLE && binding.layoutContent.visibility != View.VISIBLE) {
                 showDashboard()
@@ -272,6 +299,8 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun showDashboard() {
         exoPlayer?.pause()
+        selectedShow = null
+        isViewingSeriesEpisodes = false
 
         binding.layoutLoading.visibility = View.GONE
         binding.layoutContent.visibility = View.GONE
@@ -282,6 +311,8 @@ class PlayerActivity : AppCompatActivity() {
     private fun openSection(section: SectionType) {
         try {
             currentSection = section
+            selectedShow = null
+            isViewingSeriesEpisodes = false
 
             binding.layoutDashboard.visibility = View.GONE
             binding.layoutContent.visibility = View.VISIBLE
@@ -297,20 +328,27 @@ class PlayerActivity : AppCompatActivity() {
                     currentSectionChannels = moviesList
                 }
                 SectionType.SERIES -> {
-                    binding.tvSectionTitle.text = "🎭 Séries (${seriesList.size})"
+                    binding.tvSectionTitle.text = "🎭 Séries (${preGroupedSeriesShows.size} títulos)"
                     currentSectionChannels = seriesList
                 }
             }
 
-            // Construir lista de categorias da barra lateral esquerda a partir dos dados nativos
             val categoryMap = mutableMapOf<String, Int>()
-            for (item in currentSectionChannels) {
-                val catName = if (item.category.isEmpty()) "Geral" else item.category
-                categoryMap[catName] = (categoryMap[catName] ?: 0) + 1
+            if (section == SectionType.SERIES) {
+                for (show in preGroupedSeriesShows) {
+                    val catName = if (show.category.isEmpty()) "Geral" else show.category
+                    categoryMap[catName] = (categoryMap[catName] ?: 0) + 1
+                }
+            } else {
+                for (item in currentSectionChannels) {
+                    val catName = if (item.category.isEmpty()) "Geral" else item.category
+                    categoryMap[catName] = (categoryMap[catName] ?: 0) + 1
+                }
             }
 
             val categoryListInfo = mutableListOf<CategoryItemInfo>()
-            categoryListInfo.add(CategoryItemInfo("Todos", currentSectionChannels.size, "📺"))
+            val totalCount = if (section == SectionType.SERIES) preGroupedSeriesShows.size else currentSectionChannels.size
+            categoryListInfo.add(CategoryItemInfo("Todos", totalCount, "📺"))
 
             for ((catName, count) in categoryMap.entries.sortedBy { it.key }) {
                 val icon = getCategoryIcon(catName)
@@ -329,21 +367,101 @@ class PlayerActivity : AppCompatActivity() {
     private fun selectCategory(categoryName: String) {
         try {
             currentSelectedCategoryName = categoryName
+            selectedShow = null
+            isViewingSeriesEpisodes = false
 
             binding.tvSidebarHeader.text = "CATEGORIAS"
             binding.tvCategoryHeader.text = "ITENS DA CATEGORIA: ${categoryName.uppercase()}"
             binding.etSearch.text?.clear()
 
-            currentCategoryChannels = if (categoryName == "Todos") {
-                currentSectionChannels
+            if (currentSection == SectionType.SERIES) {
+                currentCategoryChannels = if (categoryName == "Todos") {
+                    preGroupedSeriesChannels
+                } else {
+                    preGroupedSeriesChannels.filter { it.category.equals(categoryName, ignoreCase = true) }
+                }
             } else {
-                currentSectionChannels.filter { it.category.equals(categoryName, ignoreCase = true) }
+                currentCategoryChannels = if (categoryName == "Todos") {
+                    currentSectionChannels
+                } else {
+                    currentSectionChannels.filter { it.category.equals(categoryName, ignoreCase = true) }
+                }
             }
 
             channelAdapter.updateList(currentCategoryChannels)
             binding.rvChannels.scrollToPosition(0)
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private fun openSeriesShow(show: SeriesShowWithSeasons) {
+        selectedShow = show
+        isViewingSeriesEpisodes = true
+        binding.tvSidebarHeader.text = "TEMPORADAS DE: ${show.title.uppercase()}"
+        binding.tvCategoryHeader.text = "EPISÓDIOS DA SÉRIE"
+
+        val seasonCategoryInfo = mutableListOf<CategoryItemInfo>()
+        for ((seasonNum, episodes) in show.seasonsMap) {
+            seasonCategoryInfo.add(
+                CategoryItemInfo(
+                    name = "Temporada $seasonNum",
+                    count = episodes.size,
+                    icon = "📅"
+                )
+            )
+        }
+
+        categoryAdapter.updateList(seasonCategoryInfo)
+        binding.rvCategories.requestFocus()
+
+        val firstSeasonNum = show.seasonsMap.keys.firstOrNull() ?: 1
+        selectSeason(firstSeasonNum)
+    }
+
+    private fun selectSeason(seasonNumber: Int) {
+        selectedSeasonNumber = seasonNumber
+        val show = selectedShow ?: return
+        val epList = show.seasonsMap[seasonNumber] ?: emptyList()
+
+        binding.tvCategoryHeader.text = "EPISÓDIOS: ${show.title.uppercase()} (TEMPORADA $seasonNumber)"
+
+        val channelItems = epList.map { ep ->
+            ChannelItem(
+                name = ep.displayName,
+                streamUrl = ep.item.streamUrl,
+                logoUrl = ep.item.logoUrl,
+                category = show.title
+            )
+        }
+
+        currentCategoryChannels = channelItems
+        channelAdapter.updateList(currentCategoryChannels)
+        binding.rvChannels.scrollToPosition(0)
+    }
+
+    private fun onItemClicked(item: ChannelItem) {
+        try {
+            if (item.streamUrl.startsWith("SERIES_SHOW:")) {
+                val showTitle = item.streamUrl.removePrefix("SERIES_SHOW:")
+                val show = preGroupedSeriesShows.find { it.title.equals(showTitle, ignoreCase = true) }
+                if (show != null) {
+                    openSeriesShow(show)
+                }
+            } else {
+                playChannel(item)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun handleBackStep() {
+        if (selectedShow != null) {
+            selectCategory(currentSelectedCategoryName)
+            openSection(SectionType.SERIES)
+        } else if (binding.layoutContent.visibility == View.VISIBLE) {
+            showDashboard()
         }
     }
 
@@ -372,7 +490,7 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun playChannel(channel: ChannelItem) {
         val url = channel.streamUrl
-        if (url.isEmpty()) return
+        if (url.isEmpty() || url.startsWith("SERIES_SHOW:")) return
 
         try {
             exoPlayer?.let { player ->
@@ -399,7 +517,7 @@ class PlayerActivity : AppCompatActivity() {
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             if (binding.layoutContent.visibility == View.VISIBLE) {
-                showDashboard()
+                handleBackStep()
                 return true
             }
         }

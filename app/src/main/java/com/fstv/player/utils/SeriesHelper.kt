@@ -20,30 +20,36 @@ object SeriesHelper {
         val trimmed = fullName.trim()
         if (trimmed.isEmpty()) return "Série"
 
-        val len = trimmed.length
-        var cutIndex = -1
+        var clean = trimmed
+        if (clean.startsWith("SÉRIE - ", ignoreCase = true)) clean = clean.substring(8).trim()
+        if (clean.startsWith("SERIE - ", ignoreCase = true)) clean = clean.substring(8).trim()
+        if (clean.startsWith("SÉRIE | ", ignoreCase = true)) clean = clean.substring(8).trim()
+        if (clean.startsWith("SERIE | ", ignoreCase = true)) clean = clean.substring(8).trim()
 
-        for (i in 0 until len - 2) {
-            val c = trimmed[i]
-            if ((c == 'S' || c == 's' || c == 'T' || c == 't') && trimmed[i + 1].isDigit()) {
-                if (i == 0 || trimmed[i - 1] == ' ' || trimmed[i - 1] == '-' || trimmed[i - 1] == '.' || trimmed[i - 1] == '[') {
-                    cutIndex = i
-                    break
-                }
-            }
+        val sRegex = Regex("(?i)\\b[ST](\\d{1,2})\\s*E(\\d{1,3})\\b")
+        val matchS = sRegex.find(clean)
+        if (matchS != null && matchS.range.first > 1) {
+            return clean.substring(0, matchS.range.first).trim().trimEnd('-', ':', '|', ' ', '.', '[', '(')
         }
 
-        if (cutIndex > 2) {
-            val candidate = trimmed.substring(0, cutIndex).trim().trimEnd('-', ':', '|', ' ', '.')
-            if (candidate.isNotEmpty()) return candidate
+        val xRegex = Regex("(?i)\\b(\\d{1,2})x(\\d{1,3})\\b")
+        val matchX = xRegex.find(clean)
+        if (matchX != null && matchX.range.first > 1) {
+            return clean.substring(0, matchX.range.first).trim().trimEnd('-', ':', '|', ' ', '.', '[', '(')
         }
 
-        val dashIdx = trimmed.indexOf(" - ")
+        val tempRegex = Regex("(?i)\\bTemporada\\s*(\\d{1,2})\\b")
+        val matchTemp = tempRegex.find(clean)
+        if (matchTemp != null && matchTemp.range.first > 1) {
+            return clean.substring(0, matchTemp.range.first).trim().trimEnd('-', ':', '|', ' ', '.', '[', '(')
+        }
+
+        val dashIdx = clean.indexOf(" - ")
         if (dashIdx > 2) {
-            return trimmed.substring(0, dashIdx).trim()
+            return clean.substring(0, dashIdx).trim()
         }
 
-        return trimmed
+        return clean
     }
 
     fun extractSeasonAndEpisode(fullName: String): Pair<Int, Int> {
