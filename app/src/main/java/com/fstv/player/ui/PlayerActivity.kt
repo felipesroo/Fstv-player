@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.widget.Toast
@@ -163,39 +164,53 @@ class PlayerActivity : AppCompatActivity() {
         val cacheFile = File(cacheDir, "cached_playlist.m3u")
 
         lifecycleScope.launch(Dispatchers.IO) {
-            // 1. Se existir cache local (> 1KB), carregar INSTANTANEAMENTE (< 0.5s)
-            if (cacheFile.exists() && cacheFile.length() > 1024) {
-                try {
-                    val stream = FileInputStream(cacheFile)
-                    val channels = M3uParser.parseStream(stream)
-                    stream.close()
-                    if (channels.isNotEmpty()) {
-                        processAndDisplayChannels(channels)
-                        // Baixar atualização da lista em segundo plano sem bloquear o usuário
-                        downloadAndCachePlaylist(url, cacheFile, updateUi = false)
-                        return@launch
+            try {
+                // 1. Tentar ler do Cache Local primeiro
+                if (cacheFile.exists() && cacheFile.length() > 1024) {
+                    try {
+                        val stream = FileInputStream(cacheFile)
+                        val channels = M3uParser.parseStream(stream)
+                        stream.close()
+                        if (channels.isNotEmpty()) {
+                            processAndDisplayChannels(channels)
+                            // Atualização silenciosa em background
+                            downloadAndCachePlaylist(url, cacheFile, updateUi = false)
+                            return@launch
+                        } else {
+                            cacheFile.delete()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("PlayerActivity", "Erro lendo cache", e)
+                        cacheFile.delete()
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
-            }
 
-            // 2. Se não tinha cache, mostrar tela de carregamento e baixar
-            withContext(Dispatchers.Main) {
-                binding.layoutLoading.visibility = View.VISIBLE
-                binding.progressBarPlayer.visibility = View.VISIBLE
-                binding.btnRetryLoading.visibility = View.GONE
-                binding.tvLoadingStatus.text = "Carregando lista de canais..."
-                binding.tvLoadingSub.text = "Obtendo dados do servidor IPTV..."
-            }
+                // 2. Se não tinha cache, exibir carregamento na tela
+                withContext(Dispatchers.Main) {
+                    binding.layoutLoading.visibility = View.VISIBLE
+                    binding.progressBarPlayer.visibility = View.VISIBLE
+                    binding.btnRetryLoading.visibility = View.GONE
+                    binding.tvLoadingStatus.text = "Carregando lista de canais..."
+                    binding.tvLoadingSub.text = "Obtendo dados do servidor IPTV..."
+                }
 
-            val downloadOk = downloadAndCachePlaylist(url, cacheFile, updateUi = true)
+                val downloadOk = downloadAndCachePlaylist(url, cacheFile, updateUi = true)
 
-            if (!downloadOk) {
+                if (!downloadOk) {
+                    withContext(Dispatchers.Main) {
+                        binding.progressBarPlayer.visibility = View.GONE
+                        binding.tvLoadingStatus.text = "❌ Não foi possível carregar a lista"
+                        binding.tvLoadingSub.text = "Verifique sua conexão de rede ou tente novamente."
+                        binding.btnRetryLoading.visibility = View.VISIBLE
+                        binding.btnRetryLoading.requestFocus()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("PlayerActivity", "Erro no carregamento principal", e)
                 withContext(Dispatchers.Main) {
                     binding.progressBarPlayer.visibility = View.GONE
-                    binding.tvLoadingStatus.text = "❌ Não foi possível carregar a lista"
-                    binding.tvLoadingSub.text = "Verifique sua conexão ou toque em Tentar Novamente."
+                    binding.tvLoadingStatus.text = "❌ Erro ao processar a lista"
+                    binding.tvLoadingSub.text = e.localizedMessage ?: "Tente novamente."
                     binding.btnRetryLoading.visibility = View.VISIBLE
                     binding.btnRetryLoading.requestFocus()
                 }
@@ -241,7 +256,7 @@ class PlayerActivity : AppCompatActivity() {
             }
             false
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("PlayerActivity", "Erro no download da playlist", e)
             false
         }
     }

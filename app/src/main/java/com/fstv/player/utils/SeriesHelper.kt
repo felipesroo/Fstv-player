@@ -16,6 +16,16 @@ data class SeriesShowWithSeasons(
 
 object SeriesHelper {
 
+    // Regexes estáticos pré-compilados (Alocados UMA ÚNICA VEZ para performance máxima)
+    private val sRegexBoundary = Regex("(?i)\\b[ST](\\d{1,2})\\s*E(\\d{1,3})\\b")
+    private val xRegexBoundary = Regex("(?i)\\b(\\d{1,2})x(\\d{1,3})\\b")
+    private val tempRegexBoundary = Regex("(?i)\\bTemporada\\s*(\\d{1,2})\\b")
+
+    private val sRegex = Regex("(?i)[ST](\\d{1,2})\\s*E(\\d{1,3})")
+    private val xRegex = Regex("(?i)(\\d{1,2})x(\\d{1,3})")
+    private val tempRegex = Regex("(?i)Temporada\\s*(\\d{1,2})")
+    private val epRegex = Regex("(?i)E(?:pis[óo]dio)?\\s*(\\d{1,3})")
+
     fun extractShowTitle(fullName: String): String {
         val trimmed = fullName.trim()
         if (trimmed.isEmpty()) return "Série"
@@ -26,20 +36,17 @@ object SeriesHelper {
         if (clean.startsWith("SÉRIE | ", ignoreCase = true)) clean = clean.substring(8).trim()
         if (clean.startsWith("SERIE | ", ignoreCase = true)) clean = clean.substring(8).trim()
 
-        val sRegex = Regex("(?i)\\b[ST](\\d{1,2})\\s*E(\\d{1,3})\\b")
-        val matchS = sRegex.find(clean)
+        val matchS = sRegexBoundary.find(clean)
         if (matchS != null && matchS.range.first > 1) {
             return clean.substring(0, matchS.range.first).trim().trimEnd('-', ':', '|', ' ', '.', '[', '(')
         }
 
-        val xRegex = Regex("(?i)\\b(\\d{1,2})x(\\d{1,3})\\b")
-        val matchX = xRegex.find(clean)
+        val matchX = xRegexBoundary.find(clean)
         if (matchX != null && matchX.range.first > 1) {
             return clean.substring(0, matchX.range.first).trim().trimEnd('-', ':', '|', ' ', '.', '[', '(')
         }
 
-        val tempRegex = Regex("(?i)\\bTemporada\\s*(\\d{1,2})\\b")
-        val matchTemp = tempRegex.find(clean)
+        val matchTemp = tempRegexBoundary.find(clean)
         if (matchTemp != null && matchTemp.range.first > 1) {
             return clean.substring(0, matchTemp.range.first).trim().trimEnd('-', ':', '|', ' ', '.', '[', '(')
         }
@@ -56,7 +63,6 @@ object SeriesHelper {
         var season = 1
         var episode = 1
 
-        val sRegex = Regex("(?i)[ST](\\d{1,2})\\s*E(\\d{1,3})")
         val matchS = sRegex.find(fullName)
         if (matchS != null) {
             season = matchS.groupValues[1].toIntOrNull() ?: 1
@@ -64,7 +70,6 @@ object SeriesHelper {
             return Pair(season, episode)
         }
 
-        val xRegex = Regex("(?i)(\\d{1,2})x(\\d{1,3})")
         val matchX = xRegex.find(fullName)
         if (matchX != null) {
             season = matchX.groupValues[1].toIntOrNull() ?: 1
@@ -72,13 +77,11 @@ object SeriesHelper {
             return Pair(season, episode)
         }
 
-        val tempRegex = Regex("(?i)Temporada\\s*(\\d{1,2})")
         val matchTemp = tempRegex.find(fullName)
         if (matchTemp != null) {
             season = matchTemp.groupValues[1].toIntOrNull() ?: 1
         }
 
-        val epRegex = Regex("(?i)E(?:pis[óo]dio)?\\s*(\\d{1,3})")
         val matchEp = epRegex.find(fullName)
         if (matchEp != null) {
             episode = matchEp.groupValues[1].toIntOrNull() ?: 1
