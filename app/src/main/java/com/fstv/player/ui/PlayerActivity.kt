@@ -251,14 +251,12 @@ class PlayerActivity : AppCompatActivity() {
         val movies = ArrayList<ChannelItem>(10000)
         val series = ArrayList<ChannelItem>(10000)
 
-        val seriesRegex = Regex("(?i).*[ST]\\d{1,2}\\s*E\\d{1,3}.*")
-
         for (item in allChannels) {
             val catUpper = item.category.uppercase()
             val urlLower = item.streamUrl.lowercase()
 
             when {
-                catUpper.contains("SÉR") || catUpper.contains("SERIE") || catUpper.contains("SÉRIE") || catUpper.contains("TEMPORADA") || catUpper.contains("ANIME") || catUpper.contains("NOVELA") || urlLower.contains("/series/") || seriesRegex.matches(item.name) -> {
+                catUpper.contains("SÉR") || catUpper.contains("SERIE") || catUpper.contains("SÉRIE") || catUpper.contains("TEMPORADA") || catUpper.contains("ANIME") || catUpper.contains("NOVELA") || urlLower.contains("/series/") -> {
                     series.add(item)
                 }
                 catUpper.contains("FILM") || catUpper.contains("MOVIE") || catUpper.contains("VOD") || catUpper.contains("CINEMA") || urlLower.contains("/movie/") -> {
