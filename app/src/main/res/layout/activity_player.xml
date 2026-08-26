@@ -230,7 +230,7 @@
         android:orientation="vertical"
         android:visibility="gone">
 
-        <!-- Barra Superior da Página de Conteúdo -->
+        <!-- Barra Superior com Botão INÍCIO Destacado -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
@@ -240,15 +240,37 @@
             android:paddingStart="16dp"
             android:paddingEnd="16dp">
 
+            <!-- Botão 🏠 INÍCIO (Volta Direto ao Menu Principal) -->
+            <TextView
+                android:id="@+id/btnHome"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🏠 INÍCIO"
+                android:textColor="#FFFFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:background="@drawable/tab_selector"
+                android:focusable="true"
+                android:clickable="true" />
+
+            <!-- Botão ← Voltar -->
             <TextView
                 android:id="@+id/btnBackToDashboard"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="← Menu Principal"
-                android:textColor="#FF6366F1"
+                android:text="← Voltar"
+                android:textColor="#FF818CF8"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:padding="8dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:layout_marginStart="8dp"
                 android:background="@drawable/tab_selector"
                 android:focusable="true"
                 android:clickable="true" />
@@ -266,7 +288,7 @@
 
             <EditText
                 android:id="@+id/etSearch"
-                android:layout_width="260dp"
+                android:layout_width="240dp"
                 android:layout_height="38dp"
                 android:background="#1AFFFFFF"
                 android:hint="🔍 Pesquisar..."
@@ -286,7 +308,7 @@
             android:layout_weight="1"
             android:orientation="horizontal">
 
-            <!-- SIDEBAR VERTICAL DE CATEGORIAS (Um abaixo do outro) -->
+            <!-- SIDEBAR VERTICAL DE CATEGORIAS / TEMPORADAS (Esquerda) -->
             <LinearLayout
                 android:id="@+id/sidebarCategories"
                 android:layout_width="280dp"
@@ -295,6 +317,7 @@
                 android:background="#DD0D0D1F">
 
                 <TextView
+                    android:id="@+id/tvSidebarHeader"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="CATEGORIAS"
@@ -305,7 +328,7 @@
                     android:padding="12dp"
                     android:background="#1AFFFFFF" />
 
-                <!-- LISTA VERTICAL DE CATEGORIAS -->
+                <!-- LISTA VERTICAL DE CATEGORIAS / TEMPORADAS -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvCategories"
                     android:layout_width="match_parent"
@@ -316,7 +339,7 @@
 
             </LinearLayout>
 
-            <!-- LISTA/GRADE DE CONTEÚDO (Canais/Filmes da categoria selecionada) -->
+            <!-- LISTA/GRADE DE CONTEÚDO (Canais/Filmes/Episódios) -->
             <LinearLayout
                 android:id="@+id/sidebarChannels"
                 android:layout_width="300dp"
@@ -383,7 +406,7 @@
                         android:id="@+id/tvCurrentCategory"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="#FF6366F1"
+                        android:textColor="#FF818CF8"
                         android:textSize="14sp"
                         android:layout_marginTop="4dp" />
 
